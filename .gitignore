@@ -1,0 +1,15 @@
+/obj/
+/bin/
+*.gcda
+*.gcno
+*.gcov
+coverage/
+coverage.html
+
+Makefile.user
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
