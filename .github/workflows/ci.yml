@@ -1,0 +1,73 @@
+name: CI Pipeline
+
+on: 
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs: 
+  quality-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libgtest-dev \
+            valgrind \
+            gcovr \
+            clang-format
+      
+      - name: Build project
+        run: make all
+      
+      - name: Check code formatting
+        run: |
+          find src tests -name "*.cpp" -o -name "*.hpp" | \
+          xargs clang-format --dry-run --Werror
+      
+      - name: Run tests
+        run: make test
+      
+      - name: Check memory leaks
+        run: |
+          valgrind \
+            --leak-check=full \
+            --error-exitcode=1 \
+            --show-leak-kinds=all \
+            ./bin/run_tests
+      
+      - name: Build with coverage
+        run: make coverage
+      
+      - name: Check coverage threshold
+        run: |
+          coverage_percent=$(gcovr --print-summary | grep TOTAL | awk '{print $4}' | sed 's/%//')
+          echo "Coverage: ${coverage_percent}%"
+          if (( $(echo "$coverage_percent < 90" | bc -l) )); then
+            echo "Coverage ${coverage_percent}% is below 90%"
+            exit 1
+          fi
+          echo "Coverage ${coverage_percent}% meets minimum"
+      
+      - name: Generate HTML coverage report
+        if: always()
+        run: |
+          gcovr --html-details coverage.html
+          mkdir -p coverage-report
+          mv coverage.html coverage-report/
+          mv coverage*.html coverage-report/ || true
+      
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report/
