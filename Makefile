@@ -37,7 +37,9 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 test: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
-coverage: clean test
+coverage: clean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" all
+	valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./bin/network_log_processor
 	gcovr -r . --print-summary
 
 instdeps:
