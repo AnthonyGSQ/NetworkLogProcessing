@@ -1,0 +1,136 @@
+= Network Log Processing
+
+A high-performance C++ application for collecting, processing, and analyzing HTTP network logs with PostgreSQL storage and statistical reporting capabilities.
+
+== Overview
+
+This application provides a robust solution for network log management by:
+
+* Receiving HTTP-formatted log messages from the network
+* Validating and processing incoming log data
+* Storing structured logs in a PostgreSQL database
+* Generating comprehensive statistics and insights from collected data
+
+== Features
+
+* *Real-time HTTP Log Processing*: Handles HTTP-formatted network messages
+* *Data Validation*: Ensures log integrity before storage
+* *PostgreSQL Integration*: Efficient database storage and retrieval
+* *Statistical Analysis*: Generate reports and insights from stored logs
+* *Scalable Architecture*: Designed for high-volume log processing
+
+== Requirements
+
+* C++17 or higher
+* PostgreSQL 12+
+* Google Test (for testing)
+* Make
+
+== Building the Project
+
+[source,bash]
+----
+make all
+----
+
+== Running Tests
+
+[source,bash]
+----
+make test
+----
+
+This command will run all the google test of the *tests* directory
+
+== Merge minimum requirements
+
+[source, bash]
+----
+make coverage
+----
+
+This will run all the google test, see if they coverage at least 90% of all the code and check if there is any memory leak using valgrind.
+
+== Usage
+
+[source,bash]
+----
+# Start the log processor
+./bin/network_log_processor
+
+# View available options
+./bin/network_log_processor --help
+----
+
+== HTTP Log Format
+
+The application expects HTTP-formatted messages with the following structure:
+
+[source,http]
+----
+POST /log HTTP/1.1
+Host: localhost
+Content-Type: application/json
+Content-Length: <length>
+
+{
+  "timestamp": "2025-12-25T10:30:00Z",
+  "level": "INFO",
+  "message": "Log message here",
+  "source": "192.168.1.100"
+}
+----
+
+== Database Schema
+
+The PostgreSQL database stores logs with the following schema:
+
+[source,sql]
+----
+CREATE TABLE logs (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL,
+    level VARCHAR(20) NOT NULL,
+    message TEXT NOT NULL,
+    source VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+----
+
+== Configuration
+
+Database connection settings can be configured via environment variables:
+
+[source,bash]
+----
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=network_logs
+export DB_USER=postgres
+export DB_PASSWORD=your_password
+----
+
+== Project Structure
+
+----
+.
+├── src/          # Source code files
+├── tests/        # Google Test unit tests
+├── doc/          # Documentation
+├── Makefile      # Build configuration
+└── readme.adoc   # This file
+----
+
+== Development
+
+See link:doc/workflow.adoc[workflow documentation] for development guidelines.
+
+See link:doc/testing.adoc[testing documentation] for testing strategies.
+
+== License
+
+[Add your license here]
+
+== Authors
+
+AnthonyGSQ

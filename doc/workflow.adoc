@@ -1,0 +1,81 @@
+= Github commits and branches format
+
+For this project, all the commits messages and branches names should follow a specific format.
+
+== Branch Naming Convention
+
+Branches should be named according to the type of work being done. Use the following format:
+
+- **feature/**: For new features or enhancements.
+  Example: `feature/addGoogleTests`
+- **bugfix/**: For fixing bugs.
+  Example: `bugfix/fixMakefileCoverage`
+- **hotfix/**: For urgent fixes in production.
+  Example: `hotfix/fixCriticalError`
+- **chore/**: For maintenance tasks or refactoring.
+  Example: `chore/updateDependencies`
+
+== Commit Message Format
+
+Commit messages should be clear and follow this structure:
+
+```
+<type>(<scope>): <description>
+```
+
+### Fields:
+- **type**: The type of change. Use one of the following:
+  - `feat`: A new feature.
+  - `fix`: A bug fix.
+  - `docs`: Documentation changes.
+  - `style`: Code style changes (formatting, no logic changes).
+  - `refactor`: Code refactoring (no new features or fixes).
+  - `test`: Adding or updating tests.
+  - `chore`: Maintenance tasks.
+- **scope**: The area of the codebase affected (optional).
+  Example: `feat(tests): add Google Test framework`
+- **description**: A short summary of the change.
+- **body**: (Optional) Detailed explanation of the change.
+- **footer**: (Optional) References to issues or breaking changes.
+
+### Example Commit Messages:
+- `feat(tests): add Google Test framework`
+- `fix(makefile): correct coverage rule`
+- `docs(workflow): add commit and branch conventions`
+
+== Google Test Workflow
+
+Google Test is used for unit testing in this project. Follow these steps to add and run tests:
+
+1. **Create a Test File**:
+   - Place test files in the `tests/` directory.
+   - Use the naming convention: `(name)Test.cpp`.
+
+2. **Write Tests**:
+   - Include the Google Test header: `#include <gtest/gtest.h>`.
+   - Use the `TEST` macro to define test cases.
+
+   Example:
+   ```cpp
+   #include <gtest/gtest.h>
+
+   TEST(MathTests, Addition) {
+       EXPECT_EQ(1 + 1, 2);
+   }
+   ```
+
+3. **Run Tests**:
+   - Use the `make test` command to compile and execute tests.
+   - Ensure all tests pass before committing changes.
+
+4. **Commit Changes**:
+   - Follow the commit message format described above.
+   - Example: `test(math): add addition test case`
+
+5. **Push to a Feature Branch**:
+   - Use the branch naming convention described above.
+   - Example: `feature/add-math-tests`
+
+== Notes
+- Always ensure the CI pipeline passes before merging changes.
+- Write clear and concise commit messages to maintain a clean history.
