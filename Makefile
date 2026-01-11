@@ -48,6 +48,13 @@ instdeps:
 		make \
 		gtest-devel \
 		gcovr
+
+format:
+	find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
+
+check-format:
+	find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format --dry-run --Werror
+
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
