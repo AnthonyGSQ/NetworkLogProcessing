@@ -10,6 +10,13 @@
 // for concurrency
 #include <thread>
 
+// shutdown (thread-safe) librarys
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+// signal handling
+#include <signal.h>
+
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
@@ -20,7 +27,6 @@ class HttpServer {
     // initialize the acceptor tcp object, in case of fail, return false
     // otherwise, return true
     bool startAcceptor();
-
    private:
     bool ipv4;
     int port;
@@ -28,10 +34,27 @@ class HttpServer {
     asio::io_context ioc;
     // configuration of the server
     tcp::acceptor acceptor{ioc};
+    // thread-safe shutdown mechanism
+    std::atomic<bool> shouldStop{false};
+    std::mutex serverMutex;
+    std::condition_variable cond_var;
+
+    // singleton instance for signal handler
+    static HttpServer* instance;
+    static std::mutex instance_mtx;
+
     // this function waits until a client connect to the server, starting
     // the connection and making a thread detach to leave the main thread
     // free so it can accept more clients.
     void acceptConnections();
+    // stop server (thread-safe) function
+    void stopServer();
+    // for checks if server is running
+    bool isRunning() const;
+    // start mutex, signals and singleton
+    void setupSignalHandlers();
+    // static signal handler
+    static void handleSignal(int signal);
 };
 
 #endif
