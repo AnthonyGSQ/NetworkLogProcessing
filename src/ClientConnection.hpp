@@ -15,14 +15,14 @@ namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
 class clientConnection {
-    public:
-        explicit clientConnection(tcp::socket socket);
-        void operator()();
-    private:
-        tcp::socket clientSocket;
-        beast::flat_buffer socketBuffer;
-        http::request<http::string_body> httpRequest;
-};
+   public:
+    explicit clientConnection(tcp::socket socket);
+    void operator()();
 
+   private:
+    tcp::socket clientSocket;
+    beast::flat_buffer socketBuffer;
+    http::request<http::string_body> httpRequest;
+};
 
 #endif

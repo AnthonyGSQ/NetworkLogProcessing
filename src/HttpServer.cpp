@@ -1,11 +1,12 @@
 #include "HttpServer.hpp"
-#include "ClientConnection.hpp"
+
 #include <iostream>
 #include <thread>
 
-HttpServer::HttpServer(bool ipv4, int port) :
-    ipv4(ipv4), port(port), acceptor(ioc) {}
+#include "ClientConnection.hpp"
 
+HttpServer::HttpServer(bool ipv4, int port)
+    : ipv4(ipv4), port(port), acceptor(ioc) {}
 
 bool HttpServer::startAcceptor() {
     try {
@@ -16,7 +17,7 @@ bool HttpServer::startAcceptor() {
         }
         acceptor.bind(tcp::endpoint(tcp::v4(), port));
         acceptor.listen(asio::socket_base::max_listen_connections);
-        
+
         std::cout << "Server listening on port " << port << "\n";
         acceptConnections();
         ioc.run();
@@ -28,10 +29,10 @@ bool HttpServer::startAcceptor() {
 }
 
 void HttpServer::acceptConnections() {
-    for(;;) {
+    for (;;) {
         tcp::socket currentSocket{ioc};
         acceptor.accept(currentSocket);
-        
+
         clientConnection currentClient(std::move(currentSocket));
         std::thread t(std::move(currentClient));
         t.detach();
