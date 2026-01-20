@@ -72,7 +72,7 @@ void HttpServer::handleSignal(int signal) {
     if (!instance) {
         return;
     }
-    if (signal == SIGTERM || signal  == SIGINT || signal == SIGTSTP) {
+    if (signal == SIGTERM || signal == SIGINT || signal == SIGTSTP) {
         std::cout<<"\n[SIGNAL] Received signal "<<signal
         <<", initiating graceful shutdown...\n";
         instance->stopServer();
@@ -85,5 +85,8 @@ void HttpServer::setupSignalHandlers() {
         // set singleton
         instance = this;
     }
-    std::cout<<"Signal handlers registered (SIGTERM, SIGINT)\n";
+    signal(SIGINT, HttpServer::handleSignal);   // Ctrl+C
+    signal(SIGTERM, HttpServer::handleSignal);  // kill <pid>
+    signal(SIGTSTP, HttpServer::handleSignal);  // Ctrl+Z
+    std::cout<<"Signal handlers registered (SIGTERM, SIGINT, SIGTSTP)\n";
 }
