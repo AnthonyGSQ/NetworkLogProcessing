@@ -57,5 +57,6 @@ check-format:
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 
 .PHONY: all clean test coverage
