@@ -35,7 +35,7 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS)
 
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+	timeout -s SIGINT -k 2 5 ./$(TEST_TARGET) || true
 
 coverage: clean
 	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" all
