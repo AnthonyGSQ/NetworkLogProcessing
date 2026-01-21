@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "../src/Logger.hpp"
 
 TEST(Logger, FunctionalJson) {
@@ -25,9 +26,9 @@ TEST(Logger, InvalidJson) {
     })";
     Logger logger;
     EXPECT_THROW(logger.parseJson(invalidJson), std::invalid_argument);
-    std:: string voidJson = "";
+    std::string voidJson = "";
     EXPECT_THROW(logger.parseJson(voidJson), std::invalid_argument);
-    std:: string duplicateJson = R"({
+    std::string duplicateJson = R"({
         "owner": "Juan",
         "expirationDate": "2026-01-25",
         "category": "deluxe",
@@ -41,7 +42,7 @@ TEST(Logger, InvalidJson) {
     })";
     EXPECT_THROW(logger.parseJson(duplicateJson), std::invalid_argument);
 
-    std:: string twoOwnersJson = R"({
+    std::string twoOwnersJson = R"({
         "owner": "Juan, Daniel",
         "expirationDate": "2026-01-25",
         "category": "deluxe",

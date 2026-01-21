@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "../src/HttpServer.hpp"
 
 TEST(HttpServer, ConstructorIpv4) {
