@@ -23,7 +23,8 @@ jobs:
             libgtest-dev \
             valgrind \
             gcovr \
-            clang-format
+            clang-format \
+            libboost-all-dev
       
       - name: Build project
         run: make all

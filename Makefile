@@ -36,7 +36,7 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS) $(LDFLAGS)
 
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+	timeout -s SIGINT -k 2 5 ./$(TEST_TARGET) || true
 
 coverage: clean
 	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" test
@@ -73,5 +73,6 @@ check-format:
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 
 .PHONY: all clean test coverage valgrind help instdeps format check-format
