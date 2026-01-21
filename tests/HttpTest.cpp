@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "../src/HttpServer.hpp"
 
 TEST(HttpServer, ConstructorIpv4) {
@@ -9,7 +10,6 @@ TEST(HttpServer, ConstructorIpv4) {
 TEST(HttpServer, ConstructorIpv6) {
     HttpServer server(false, 8081);
     EXPECT_TRUE(server.startAcceptor());
-
 }
 
 TEST(HttpServer, NegativePort) {

@@ -27,6 +27,7 @@ class HttpServer {
     // initialize the acceptor tcp object, in case of fail, return false
     // otherwise, return true
     bool startAcceptor();
+
    private:
     bool ipv4;
     int port;
