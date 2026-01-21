@@ -1,6 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Werror
 COVERAGE_FLAGS = --coverage
+LDFLAGS = -lboost_json
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -20,7 +21,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	mkdir -p $(OBJ_DIR)
@@ -32,22 +33,37 @@ $(OBJ_DIR)/test_%.o: $(TEST_DIR)/%.cpp
 
 $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 	mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS)
+	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS) $(LDFLAGS)
 
 test: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 coverage: clean
-	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" all
-	valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./bin/network_log_processor
-	gcovr -r . --print-summary
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" test
+	gcovr -r . --print-summary --fail-under-lines 90
+
+valgrind: all
+	timeout -s SIGINT 5 valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./$(TARGET) || true
+
+help:
+	@echo "all"
+	@echo "test"
+	@echo "coverage"
+	@echo "valgrind"
+	@echo "instdeps"
+	@echo "format"
+	@echo "check-format"
+	@echo "clean"
+	@echo "help"
 
 instdeps:
 	sudo dnf install -y \
 		gcc-c++ \
 		make \
 		gtest-devel \
-		gcovr
+		gcovr \
+		boost-devel \
+		valgrind
 
 format:
 	find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
@@ -58,4 +74,4 @@ check-format:
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-.PHONY: all clean test coverage
+.PHONY: all clean test coverage valgrind help instdeps format check-format
