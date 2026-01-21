@@ -16,12 +16,17 @@ bool HttpServer::startAcceptor() {
     try {
         if (ipv4) {
             acceptor.open(tcp::v4());
+            acceptor.bind(tcp::endpoint(tcp::v4(), port));
         } else {
             acceptor.open(tcp::v6());
+            acceptor.bind(tcp::endpoint(tcp::v6(), port));
+        }
+        if (port <=0) {
+            std::cerr<<"HttpServer::startAcceptor(): Error: invalid port\n";
+            return false;
         }
         // TODO: a little risky if there is old http requests in the network buffer
         acceptor.set_option(tcp::acceptor::reuse_address(true));
-        acceptor.bind(tcp::endpoint(tcp::v4(), port));
         acceptor.listen(asio::socket_base::max_listen_connections);
 
         std::cout << "Server listening on port " << port << "\n";
