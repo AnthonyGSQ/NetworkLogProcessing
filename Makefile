@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -Werror
+CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
 COVERAGE_FLAGS = --coverage
 LDFLAGS = -lboost_json
 
@@ -36,19 +36,26 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS) $(LDFLAGS)
 
 test: $(TEST_TARGET)
-	timeout -s SIGINT -k 2 5 ./$(TEST_TARGET) || true
+	./$(TEST_TARGET)
 
 coverage: clean
-	$(MAKE) CXXFLAGS="$(CXXFLAGS) $(COVERAGE_FLAGS)" test
-	gcovr -r . --print-summary --fail-under-lines 90
+	$(MAKE) test
+	gcovr -r . --print-summary --fail-under-line 90
+
+coverage-html: clean
+	$(MAKE) test
+	mkdir -p coverage
+	gcovr -r . --html-details coverage/index.html --print-summary
+	@echo "Coverage report generated at coverage/index.html"
 
 valgrind: all
-	timeout -s SIGINT 5 valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./$(TARGET) || true
+	valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./$(TARGET) || true
 
 help:
 	@echo "all"
 	@echo "test"
 	@echo "coverage"
+	@echo "coverage-html"
 	@echo "valgrind"
 	@echo "instdeps"
 	@echo "format"
@@ -75,4 +82,4 @@ clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 	find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 
-.PHONY: all clean test coverage valgrind help instdeps format check-format
+.PHONY: all clean test coverage coverage-html valgrind help instdeps format check-format
