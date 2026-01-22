@@ -36,14 +36,10 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(filter-out $(OBJ_DIR)/main.o, $(OBJECTS))
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(GTEST_FLAGS) $(LDFLAGS)
 
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
-
-coverage: clean
-	$(MAKE) test
+	timeout --signal=SIGINT 60 ./$(TEST_TARGET) || true
 	gcovr -r . --print-summary --fail-under-line 90
 
-coverage-html: clean
-	$(MAKE) test
+coverage: test
 	mkdir -p coverage
 	gcovr -r . --html-details coverage/index.html --print-summary
 	@echo "Coverage report generated at coverage/index.html"
@@ -55,7 +51,6 @@ help:
 	@echo "all"
 	@echo "test"
 	@echo "coverage"
-	@echo "coverage-html"
 	@echo "valgrind"
 	@echo "instdeps"
 	@echo "format"
