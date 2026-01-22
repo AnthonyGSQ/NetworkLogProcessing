@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
-#include <thread>
-#include <chrono>
 #include <signal.h>
-#include <cstdlib>
 #include <unistd.h>
+
 #include <barrier>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 
 #include "../src/HttpServer.hpp"
 
@@ -13,7 +14,8 @@ TEST(HttpServer, ConstructorIpv4) {
 
     std::thread server_thread([&sync_point]() {
         HttpServer server(true, 8080);
-        sync_point.arrive_and_wait();  // Espera aquí hasta que ambos threads lleguen
+        sync_point
+            .arrive_and_wait();  // Espera aquí hasta que ambos threads lleguen
         server.startAcceptor();
     });
     server_thread.detach();

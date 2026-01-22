@@ -25,6 +25,7 @@ class Logger {
     // TODO: make this function able to send a message to the html/css so the
     // user can se what he needs to add to the reservation
     bool validateJsonFormat(const Reservation& reservation);
+
    private:
 };
 

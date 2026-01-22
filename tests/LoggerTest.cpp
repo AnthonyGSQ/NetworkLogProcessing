@@ -81,4 +81,3 @@ TEST(Logger, InvalidFormatZeroRoom) {
     })";
     EXPECT_THROW(logger.parseJson(jsonWithZeroRoom), std::invalid_argument);
 }
-
