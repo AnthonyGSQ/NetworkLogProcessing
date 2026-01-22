@@ -49,7 +49,7 @@ coverage-html: clean
 	@echo "Coverage report generated at coverage/index.html"
 
 valgrind: all
-	valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./$(TARGET) || true
+	(sleep 4; pkill -SIGINT -f network_log_processor) & valgrind --leak-check=full --error-exitcode=1 --show-leak-kinds=all ./$(TARGET) || true
 
 help:
 	@echo "all"
