@@ -26,27 +26,59 @@ TEST(Logger, InvalidJson) {
     })";
     Logger logger;
     EXPECT_THROW(logger.parseJson(invalidJson), std::invalid_argument);
+}
+
+TEST(Logger, EmptyJson) {
+    Logger logger;
     std::string voidJson = "";
     EXPECT_THROW(logger.parseJson(voidJson), std::invalid_argument);
-    std::string duplicateJson = R"({
+}
+
+TEST(Logger, MalformedJson) {
+    Logger logger;
+    std::string malformedJson = R"({invalid json})";
+    EXPECT_THROW(logger.parseJson(malformedJson), std::invalid_argument);
+}
+
+TEST(Logger, ValidateJsonFormat_EmptyOwner) {
+    Logger logger;
+    Reservation res{"", "2026-01-25", "deluxe", 150, 101};
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidCost) {
+    Logger logger;
+    Reservation res{"Juan", "2026-01-25", "deluxe", -50, 101};
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidRoom) {
+    Logger logger;
+    Reservation res{"Juan", "2026-01-25", "deluxe", 150, 0};
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, InvalidFormatThrowsException) {
+    Logger logger;
+    std::string jsonWithZeroCost = R"({
+        "owner": "Juan",
+        "expirationDate": "2026-01-25",
+        "category": "deluxe",
+        "cost": 0,
+        "room": 101
+    })";
+    EXPECT_THROW(logger.parseJson(jsonWithZeroCost), std::invalid_argument);
+}
+
+TEST(Logger, InvalidFormatZeroRoom) {
+    Logger logger;
+    std::string jsonWithZeroRoom = R"({
         "owner": "Juan",
         "expirationDate": "2026-01-25",
         "category": "deluxe",
         "cost": 150,
-        "room": 101
-        "owner": "Juan2",
-        "expirationDate": "2026-01-25",
-        "category": "deluxe2",
-        "cost": 1500,
-        "room": 1010
+        "room": 0
     })";
-    EXPECT_THROW(logger.parseJson(duplicateJson), std::invalid_argument);
-
-    std::string twoOwnersJson = R"({
-        "owner": "Juan, Daniel",
-        "expirationDate": "2026-01-25",
-        "category": "deluxe",
-        "cost": 150,
-        "room": 101
-    })";
+    EXPECT_THROW(logger.parseJson(jsonWithZeroRoom), std::invalid_argument);
 }
+

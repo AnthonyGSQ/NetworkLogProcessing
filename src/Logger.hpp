@@ -20,13 +20,12 @@ class Logger {
     Logger() = default;
     // parse the json and returns a Reservation object
     Reservation parseJson(const std::string& jsonFile);
-
-   private:
     // this function validates that the current json have all the reservation
     // information, if thats not the case, returns false
     // TODO: make this function able to send a message to the html/css so the
     // user can se what he needs to add to the reservation
     bool validateJsonFormat(const Reservation& reservation);
+   private:
 };
 
 #endif
