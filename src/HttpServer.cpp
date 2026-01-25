@@ -12,9 +12,7 @@ HttpServer::HttpServer(bool ipv4, int port)
     this->setupSignalHandlers();
 }
 
-HttpServer::~HttpServer() {
-    stopServer();
-}
+HttpServer::~HttpServer() { stopServer(); }
 
 bool HttpServer::startAcceptor() {
     try {
