@@ -24,6 +24,7 @@ class HttpServer {
    public:
     // class constructor which ask for ip version and port to listen
     HttpServer(bool ipv4, int port);
+    ~HttpServer();
     // initialize the acceptor tcp object, in case of fail, return false
     // otherwise, return true
     bool startAcceptor();

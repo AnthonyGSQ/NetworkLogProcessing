@@ -12,6 +12,10 @@ HttpServer::HttpServer(bool ipv4, int port)
     this->setupSignalHandlers();
 }
 
+HttpServer::~HttpServer() {
+    stopServer();
+}
+
 bool HttpServer::startAcceptor() {
     try {
         if (ipv4) {
@@ -64,7 +68,9 @@ void HttpServer::stopServer() {
     }
     this->cond_var.notify_all();
     try {
-        acceptor.close();
+        if (acceptor.is_open()) {
+            acceptor.close();
+        }
     } catch (const std::exception& e) {
         std::cerr << "HttpServer::stopServer(): Warning! acceptor is already "
                      "closed\n";

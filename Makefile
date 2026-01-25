@@ -39,9 +39,10 @@ test: $(TEST_TARGET)
 	timeout --signal=SIGINT 60 ./$(TEST_TARGET) || true
 	gcovr -r . --print-summary --fail-under-line 90
 
-coverage: test
+coverage: $(TEST_TARGET)
+	timeout --signal=SIGINT 60 ./$(TEST_TARGET) || true
 	mkdir -p coverage
-	gcovr -r . --html-details coverage/index.html --print-summary
+	gcovr -r . --html-details coverage/index.html --print-summary --fail-under-line 90
 	@echo "Coverage report generated at coverage/index.html"
 
 valgrind: all
