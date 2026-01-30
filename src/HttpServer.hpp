@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 // for concurrency
 #include <thread>
+#include "ThreadPool.hpp"
 
 // shutdown (thread-safe) librarys
 #include <atomic>
@@ -25,6 +26,7 @@ class HttpServer {
     // class constructor which ask for ip version and port to listen
     HttpServer(bool ipv4, int port);
     ~HttpServer();
+    void start();
     // initialize the acceptor tcp object, in case of fail, return false
     // otherwise, return true
     bool startAcceptor();
@@ -40,6 +42,8 @@ class HttpServer {
     std::atomic<bool> shouldStop{false};
     std::mutex serverMutex;
     std::condition_variable cond_var;
+    // ThreadPool para procesar clientes de manera concurrente
+    ThreadPool threadPool{4};  // 4 workers
 
     // singleton instance for signal handler
     static HttpServer* instance;

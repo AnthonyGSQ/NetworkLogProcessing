@@ -14,6 +14,11 @@ HttpServer::HttpServer(bool ipv4, int port)
 
 HttpServer::~HttpServer() { stopServer(); }
 
+void HttpServer::start() {
+    this->startAcceptor();
+    this->acceptConnections();
+}
+
 bool HttpServer::startAcceptor() {
     try {
         if (ipv4) {
@@ -33,8 +38,6 @@ bool HttpServer::startAcceptor() {
         acceptor.listen(asio::socket_base::max_listen_connections);
 
         std::cout << "Server listening on port " << port << "\n";
-        acceptConnections();
-        ioc.run();
         return true;
     } catch (const std::exception& e) {
         std::cerr << "HttpServer::startAcceptor() failed: " << e.what() << "\n";
@@ -48,15 +51,22 @@ void HttpServer::acceptConnections() {
             tcp::socket currentSocket{ioc};
             acceptor.accept(currentSocket);
 
-            clientConnection currentClient(std::move(currentSocket));
-            std::thread t(std::move(currentClient));
-            t.detach();
+            // Creamos una instancia de clientConnection (que hereda de Task)
+            // El constructor recibe el socket y lo mueve internamente
+            clientConnection client(std::move(currentSocket));
+
+            // Encolamos la tarea directamente
+            // threadPool.enqueueTask() es template y acepta cualquier derivada de Task
+            threadPool.enqueueTask(std::move(client));
+
         } catch (const std::exception& e) {
             if (shouldStop) break;
             std::cerr << "HttpServer::acceptConnections(): error accepting "
                          "connections\n";
         }
     }
+    // wait until all threads have finishes his work or the ioc stopped
+    ioc.run();
 }
 
 void HttpServer::stopServer() {
