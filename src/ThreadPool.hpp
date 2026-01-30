@@ -1,33 +1,35 @@
 #ifndef THREADPOOL_HPP
 #define THREADPOOL_HPP
 
-#include <Task.hpp>
 #include <iostream>
-#include <queue>
+#include <memory>
 #include <thread>
 #include <vector>
 
 #include "BlockingQueue.hpp"
-#include "ClientConnection.hpp"
+#include "TaskInterface.hpp"
 
 class ThreadPool {
    private:
     int workersCount;
-    BlockingQueue<Task> clientsQueue;
+    // queue with task objects, this objects can be (for example), clientConnections
+    BlockingQueue<std::unique_ptr<Task>> clientsQueue;
     std::vector<std::thread> workers;
-    std::mutex queueMutex;
 
     void workerLoop() {
-        Task task;
+        std::unique_ptr<Task> task;
         while (true) {
+            // pop() retorna false cuando se llama stop()
             if (!clientsQueue.pop(task)) {
                 break;
             }
             try {
-                task();
+                // Llama al método virtual execute() de la tarea
+                // Polimorfismo: cada tipo de Task implementa execute() a su manera
+                task->execute();
             } catch (const std::exception& e) {
-                std::cerr << "ThreadPoool::workerLoop(): Error, task execution "
-                             "failed\n";
+                std::cerr << "ThreadPool::workerLoop(): Error, task execution "
+                             "failed: " << e.what() << "\n";
             }
         }
     }
@@ -46,6 +48,17 @@ class ThreadPool {
                 worker.join();
             }
         }
+    }
+
+    // enqueueTask es template y acepta cualquier clase derivada de Task
+    // Crea un unique_ptr y lo encola
+    template <typename TaskType>
+    void enqueueTask(TaskType&& task) {
+        // std::make_unique crea un objeto en el heap y retorna un unique_ptr
+        // Esto permite pasar objetos move-only (como tcp::socket)
+        auto taskPtr = std::make_unique<std::decay_t<TaskType>>(
+            std::forward<TaskType>(task));
+        clientsQueue.push(std::move(taskPtr));
     }
 };
 

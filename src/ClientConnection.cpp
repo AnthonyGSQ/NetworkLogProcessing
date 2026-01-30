@@ -5,7 +5,7 @@
 clientConnection::clientConnection(tcp::socket socket)
     : clientSocket(std::move(socket)) {}
 
-void clientConnection::operator()() {
+void clientConnection::execute() {
     try {
         // first, we read and print the log of the http request
         http::read(clientSocket, socketBuffer, httpRequest);
@@ -28,7 +28,7 @@ void clientConnection::operator()() {
     // if someting went wrong, we build and send the error response here
     catch (const std::exception& e) {
         http::response<http::string_body> httpResponse;
-        std::cerr << "clientConnection::operator() failed: " << e.what()
+        std::cerr << "clientConnection::execute() failed: " << e.what()
                   << "\n";
         httpResponse.result(http::status::bad_request);
         httpResponse.body() = "Bad request";

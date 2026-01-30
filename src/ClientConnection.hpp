@@ -7,6 +7,8 @@
 #include <boost/beast/http.hpp>
 // Network, sockets, I/O
 #include <boost/asio.hpp>
+// Task interface
+#include "TaskInterface.hpp"
 
 // alias
 namespace beast = boost::beast;
@@ -14,10 +16,13 @@ namespace http = beast::http;
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-class clientConnection {
+// ClientConnection HEREDA de Task (interfaz polimórfica)
+class clientConnection : public Task {
    public:
     explicit clientConnection(tcp::socket socket);
-    void operator()();
+    
+    // Implementa el método puro virtual de Task
+    void execute() override;
 
    private:
     tcp::socket clientSocket;

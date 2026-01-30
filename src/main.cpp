@@ -4,6 +4,6 @@
 
 int main() {
     HttpServer server(true, 8080);
-    server.startAcceptor();
+    server.start();
     return 0;
 }
