@@ -7,6 +7,8 @@
 #include <boost/beast/http.hpp>
 // Network, sockets, I/O
 #include <boost/asio.hpp>
+
+#include "Logger.hpp"
 // Task interface
 #include "TaskInterface.hpp"
 
@@ -25,9 +27,13 @@ class clientConnection : public Task {
     void execute() override;
 
    private:
+    Logger log;
     tcp::socket clientSocket;
     beast::flat_buffer socketBuffer;
     http::request<http::string_body> httpRequest;
+
+    void processRequest(http::response<http::string_body>& httpResponse);
+    void sendErrorResponse(const std::exception& e) noexcept;
 };
 
 #endif

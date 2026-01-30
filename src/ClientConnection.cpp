@@ -7,32 +7,39 @@ clientConnection::clientConnection(tcp::socket socket)
 
 void clientConnection::execute() {
     try {
-        // first, we read and print the log of the http request
         http::read(clientSocket, socketBuffer, httpRequest);
         std::cout << "Log:\n" << httpRequest.body() << "\n";
-        // once we already read the http request, we start building the response
-        // which would be 200 OK if everything goes well, otherwise it return a
-        // fail response
-        http::response<http::string_body> httpResponse;
 
-        httpResponse.result(http::status::ok);
-        httpResponse.body() = "OK";
-        httpResponse.version(httpRequest.version());
-        httpResponse.prepare_payload();
-        // once we build the response, we write it in the client buffer
-        http::write(clientSocket, httpResponse);
-        // at this point, the http request was processed correctly, so we end
-        // the client conection
-        clientSocket.shutdown(tcp::socket::shutdown_send);
-    }
-    // if someting went wrong, we build and send the error response here
-    catch (const std::exception& e) {
         http::response<http::string_body> httpResponse;
-        std::cerr << "clientConnection::execute() failed: " << e.what()
-                  << "\n";
-        httpResponse.result(http::status::bad_request);
-        httpResponse.body() = "Bad request";
+        processRequest(httpResponse);
+
         httpResponse.version(httpRequest.version());
         httpResponse.prepare_payload();
+        http::write(clientSocket, httpResponse);
+        clientSocket.shutdown(tcp::socket::shutdown_send);
+    } catch (const std::exception& e) {
+        sendErrorResponse(e);
+    }
+}
+
+void clientConnection::processRequest(http::response<http::string_body>& httpResponse) {
+    // TODO: after we parseJson, we need to save the reservation
+    log.parseJson(httpRequest.body());
+    httpResponse.result(http::status::ok);
+    httpResponse.body() = "OK";
+}
+
+void clientConnection::sendErrorResponse(const std::exception& e) noexcept {
+    std::cerr << "clientConnection::execute() failed: " << e.what() << "\n";
+    
+    try {
+        http::response<http::string_body> errorResponse;
+        errorResponse.result(http::status::bad_request);
+        errorResponse.body() = "Bad request";
+        errorResponse.version(httpRequest.version());
+        errorResponse.prepare_payload();
+        http::write(clientSocket, errorResponse);
+    } catch (const std::exception& writeError) {
+        std::cerr << "Failed to send error response: " << writeError.what() << "\n";
     }
 }

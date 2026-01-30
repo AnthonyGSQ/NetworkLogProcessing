@@ -21,8 +21,6 @@ Reservation Logger::parseJson(const std::string& jsonFile) {
         if (!validateJsonFormat(currentReservation)) {
             throw std::invalid_argument("Invalid reservation format");
         }
-    } catch (const std::invalid_argument&) {
-        throw;
     } catch (const std::exception& e) {
         throw std::invalid_argument("JSON parsing failed: " +
                                     std::string(e.what()));
