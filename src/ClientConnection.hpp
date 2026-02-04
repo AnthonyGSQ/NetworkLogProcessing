@@ -22,7 +22,7 @@ using tcp = asio::ip::tcp;
 class clientConnection : public Task {
    public:
     explicit clientConnection(tcp::socket socket);
-    
+
     // Implementa el método puro virtual de Task
     void execute() override;
 

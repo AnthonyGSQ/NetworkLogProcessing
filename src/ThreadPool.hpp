@@ -12,7 +12,8 @@
 class ThreadPool {
    private:
     int workersCount;
-    // queue with task objects, this objects can be (for example), clientConnections
+    // queue with task objects, this objects can be (for example),
+    // clientConnections
     BlockingQueue<std::unique_ptr<Task>> clientsQueue;
     std::vector<std::thread> workers;
 
@@ -25,11 +26,13 @@ class ThreadPool {
             }
             try {
                 // Llama al método virtual execute() de la tarea
-                // Polimorfismo: cada tipo de Task implementa execute() a su manera
+                // Polimorfismo: cada tipo de Task implementa execute() a su
+                // manera
                 task->execute();
             } catch (const std::exception& e) {
                 std::cerr << "ThreadPool::workerLoop(): Error, task execution "
-                             "failed: " << e.what() << "\n";
+                             "failed: "
+                          << e.what() << "\n";
             }
         }
     }

@@ -22,7 +22,8 @@ void clientConnection::execute() {
     }
 }
 
-void clientConnection::processRequest(http::response<http::string_body>& httpResponse) {
+void clientConnection::processRequest(
+    http::response<http::string_body>& httpResponse) {
     // TODO: after we parseJson, we need to save the reservation
     log.parseJson(httpRequest.body());
     httpResponse.result(http::status::ok);
@@ -31,7 +32,7 @@ void clientConnection::processRequest(http::response<http::string_body>& httpRes
 
 void clientConnection::sendErrorResponse(const std::exception& e) noexcept {
     std::cerr << "clientConnection::execute() failed: " << e.what() << "\n";
-    
+
     try {
         http::response<http::string_body> errorResponse;
         errorResponse.result(http::status::bad_request);
@@ -40,6 +41,7 @@ void clientConnection::sendErrorResponse(const std::exception& e) noexcept {
         errorResponse.prepare_payload();
         http::write(clientSocket, errorResponse);
     } catch (const std::exception& writeError) {
-        std::cerr << "Failed to send error response: " << writeError.what() << "\n";
+        std::cerr << "Failed to send error response: " << writeError.what()
+                  << "\n";
     }
 }

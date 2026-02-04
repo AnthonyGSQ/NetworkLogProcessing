@@ -4,7 +4,8 @@
 
 Reservation Logger::parseJson(const std::string& jsonFile) {
     Reservation currentReservation;
-
+    // TODO: si el usuario manda un json valido sin esta info, cae en un catch
+    // no muy informativo
     try {
         // parsing json
         boost::json::object currentJson =
