@@ -1,0 +1,457 @@
+= Testing Guidelines
+
+This document outlines the testing strategy, best practices, and requirements for the Network Log Processing project.
+
+== Overview
+
+Testing is not an afterthought in professional software development—it is a fundamental part of the design process. This project maintains a minimum of 90% code coverage to ensure reliability, facilitate refactoring, and serve as living documentation.
+
+The testing strategy encompasses:
+
+* *Unit Tests*: Individual component validation
+* *Integration Tests*: Concurrent system behavior verification
+* *Code Coverage*: Measurement of test completeness
+* *Memory Safety*: Detection of leaks and invalid access
+
+== Testing Philosophy
+
+=== Why We Test
+
+Tests provide multiple critical benefits:
+
+*Confidence & Safety*:: Tests ensure that changes don't break existing functionality. When refactoring or adding features, tests act as a safety net that catches regressions immediately.
+
+*Documentation & Examples*:: Test code shows how components are intended to be used. A developer reading tests learns more about API design than from comments alone.
+
+*Design Feedback*:: Difficult-to-test code is often difficult-to-use code. Writing tests first (TDD) forces you to design cleaner, more modular interfaces.
+
+*Regression Prevention*:: Once a bug is fixed, a test prevents that exact bug from reappearing in future changes.
+
+=== Coverage Requirement
+
+This project enforces a *minimum of 90% code coverage*. This means:
+
+* At least 90% of lines of code must be executed by tests
+* At least 90% of branches must be taken by tests
+* If coverage drops below 90%, the build fails and changes cannot be merged
+
+This is not arbitrary—it's a commitment to quality. Some lines (error paths, edge cases) are easy to skip in tests, but skipping them leaves bugs dormant until production.
+
+.Coverage Report Generation
+[source,bash]
+----
+make coverage
+----
+
+This generates `coverage/index.html` with detailed, line-by-line coverage metrics.
+
+== Unit Testing
+
+Unit tests validate individual components in isolation. Each class and function should have corresponding unit tests.
+
+=== Unit Test Structure
+
+Every unit test follows this pattern:
+
+[source,cpp]
+----
+TEST(ComponentName, DescriptionOfBehavior) {
+    // ARRANGE: Set up the component and its inputs
+    MyComponent component(initialParam);
+    
+    // ACT: Perform the action being tested
+    auto result = component.doSomething(input);
+    
+    // ASSERT: Verify the result matches expectations
+    EXPECT_EQ(result, expectedValue);
+}
+----
+
+*Arrange-Act-Assert* (AAA) structure makes tests readable and maintainable. Anyone reading the test immediately understands what is being tested and what the expected behavior is.
+
+=== Writing Effective Unit Tests
+
+*Test Behavior, Not Implementation*::
+Write tests that verify *what* the component does, not *how* it does it. This allows internal refactoring without breaking tests.
+
+[source,cpp]
+----
+EXPECT_EQ(queue.getInternalListSize(), 10);
+
+// GOOD: Tests behavior (queue holds items)
+EXPECT_EQ(queue.size(), 10);
+EXPECT_TRUE(queue.contains(item));
+----
+
+*One Assertion Per Logical Behavior*::
+Each test should verify one thing. If multiple assertions fail, you'll know which aspect broke.
+
+[source,cpp]
+----
+// BAD: Multiple independent behaviors
+TEST(HttpResponse, Creation) {
+    auto response = createResponse(200, "OK");
+    EXPECT_EQ(response.statusCode, 200);
+    EXPECT_EQ(response.body, "OK");
+    EXPECT_TRUE(response.headers.contains("Content-Type"));
+    EXPECT_EQ(response.version, "1.1");
+}
+
+// OOD: One test per behavior
+TEST(HttpResponse, StatusCodeSet) {
+    auto response = createResponse(200, "OK");
+    EXPECT_EQ(response.statusCode, 200);
+}
+
+TEST(HttpResponse, BodySet) {
+    auto response = createResponse(200, "OK");
+    EXPECT_EQ(response.body, "OK");
+}
+----
+
+*Name Tests Clearly*::
+Test names should describe what is being tested and the expected outcome.
+
+[source,cpp]
+----
+// BAD: Vague name
+TEST(Queue, Test1) { ... }
+
+// GOOD: Descriptive name
+TEST(BlockingQueue, PopBlocksWhenQueueEmpty) { ... }
+TEST(BlockingQueue, PushWakesWaitingThread) { ... }
+----
+
+== Integration Testing
+
+Integration tests verify that multiple components work together correctly. For a concurrent system, this means testing interaction between threads.
+
+=== Concurrency Testing
+
+Testing concurrent code is fundamentally different from testing sequential code. You cannot just run sequential tests in parallel and expect to catch concurrency bugs.
+
+*Why Concurrency is Tricky*::
+* Race conditions occur non-deterministically
+* Data corruption may not immediately crash the program
+* Tests pass locally but fail under load
+* Timing-dependent bugs are hardest to reproduce
+
+=== HttpServer Concurrency Tests
+
+The `HttpTest.cpp` suite includes tests that verify concurrent behavior:
+
+[source,cpp]
+----
+TEST(HttpServer, ConcurrentRequests) {
+    // This test verifies that the server can handle
+    // multiple simultaneous client connections
+    
+    // Start server
+    // Launch 10 concurrent clients
+    // Verify all requests are processed correctly
+}
+----
+
+*What This Tests*::
+* ThreadPool correctly distributes work
+* No race conditions in request processing
+* Server handles simultaneous socket operations
+* Graceful shutdown with pending requests
+
+=== Thread Safety Verification
+
+To verify thread-safe components:
+
+1. Create multiple threads
+2. Have each thread perform concurrent operations
+3. Use synchronization points (`std::barrier`) to ensure true concurrency
+4. Verify final state is correct
+
+[source,cpp]
+----
+TEST(BlockingQueue, ConcurrentPushPop) {
+    BlockingQueue<int> queue;
+    std::barrier sync(2);  // Synchronize 2 threads
+    
+    std::thread producer([&]() {
+        sync.arrive_and_wait();  // Ensure pop thread starts first
+        queue.push(42);
+    });
+    
+    std::thread consumer([&]() {
+        sync.arrive_and_wait();
+        int value;
+        EXPECT_TRUE(queue.pop(value));
+        EXPECT_EQ(value, 42);
+    });
+    
+    producer.join();
+    consumer.join();
+}
+----
+
+== Running Tests
+
+=== Execute All Tests
+
+[source,bash]
+----
+make test
+----
+
+This command:
+1. Compiles all test source files with Google Test framework
+2. Runs the test executable
+3. Reports test results and coverage metrics
+4. Fails if any test fails or coverage drops below 90%
+
+Expected output:
+[source,text]
+----
+[==========] 5 tests from 2 test suites ran
+[  PASSED  ] 5 tests
+Test coverage: 92%
+----
+
+=== Generate Coverage Report
+
+[source,bash]
+----
+make coverage
+----
+
+This generates an interactive HTML report in `coverage/index.html` that shows:
+* Line-by-line coverage for each file
+* Branch coverage (if/else paths)
+* Function coverage
+* Overall statistics
+
+.Coverage Report Features
+* Color-coded lines (green = covered, red = uncovered)
+* Drill-down per file and function
+* Trend analysis if reports are kept over time
+
+=== Memory Safety Checks
+
+[source,bash]
+----
+make valgrind
+----
+
+Valgrind detects:
+* Heap memory leaks
+* Buffer overflows
+* Use-after-free bugs
+* Uninitialized variable usage
+* Invalid memory access
+
+.Example Output
+[source,text]
+----
+==1234== HEAP SUMMARY:
+==1234== in use at exit: 0 bytes
+==1234== All heap blocks were freed
+====1234== ERROR SUMMARY: 0 errors
+----
+
+If any errors are found, the build fails. This ensures that refactoring or changes don't introduce memory issues.
+
+== Test Organization
+
+=== Naming Convention
+
+Test files follow the pattern `*Test.cpp`:
+
+* `HttpTest.cpp` — Tests for HttpServer class
+* `LoggerTest.cpp` — Tests for Logger class
+* Future: `DatabaseTaskTest.cpp` — Tests for DatabaseTask class
+
+=== Test Fixtures
+
+For tests that need common setup, use Google Test fixtures:
+
+[source,cpp]
+----
+class HttpServerTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Common setup before each test
+        server = std::make_unique<HttpServer>(true, 18080);
+    }
+    
+    void TearDown() override {
+        // Common cleanup after each test
+        server.reset();
+    }
+    
+    std::unique_ptr<HttpServer> server;
+};
+
+TEST_F(HttpServerTest, ConstructorIpv4) {
+    // Uses server from SetUp()
+}
+----
+
+Fixtures eliminate code duplication and make tests more maintainable.
+
+== Common Testing Patterns
+
+=== Testing Exceptions
+
+Verify that code throws the expected exception:
+
+[source,cpp]
+----
+TEST(MyComponent, ThrowsOnInvalidInput) {
+    MyComponent comp;
+    EXPECT_THROW(comp.process(""), std::invalid_argument);
+}
+----
+
+=== Testing State Changes
+
+[source,cpp]
+----
+TEST(Server, ShutdownStopsAcceptingConnections) {
+    server.start();
+    EXPECT_TRUE(server.isRunning());
+    
+    server.stop();
+    EXPECT_FALSE(server.isRunning());
+}
+----
+
+=== Testing Async/Concurrent Behavior
+
+Use barriers and condition variables to coordinate threads:
+
+[source,cpp]
+----
+std::barrier sync(2);
+
+std::thread t1([&]() {
+    sync.arrive_and_wait();  // Ensure both threads start together
+    // Test concurrent behavior
+});
+
+std::thread t2([&]() {
+    sync.arrive_and_wait();
+    // Test concurrent behavior
+});
+----
+
+== Best Practices
+
+=== DO
+
+* Name tests clearly and descriptively
+* Test the public interface, not private implementation
+* Use fixtures for common setup/teardown
+* Keep tests independent (one test should not depend on another)
+* Test both success and failure paths
+* Use barriers to synchronize concurrent threads
+* Document non-obvious test logic with comments
+
+=== DON'T
+
+* Test implementation details
+* Have tests depend on each other or shared state
+* Use sleep() to wait for conditions (use condition variables)
+* Write overly complex tests that are hard to understand
+* Skip testing edge cases or error paths
+* Ignore code coverage reports
+* Test time-dependent behavior without controlling time
+
+== Coverage Goals by Component
+
+[cols="2,1"]
+|===
+|Component|Target Coverage
+
+|HttpServer
+|100% (critical for reliability)
+
+|ThreadPool
+|100% (concurrency bugs are subtle)
+
+|BlockingQueue
+|100% (thread-safe data structure)
+
+|ClientConnection
+|95%+ (business logic)
+
+|Logger
+|90%+ (utility)
+|===
+
+## Adding New Tests
+
+When implementing a new feature:
+
+1. Write tests *first* (Test-Driven Development)
+2. Tests define the expected behavior
+3. Implement code to pass the tests
+4. Refactor while keeping tests green
+5. Verify coverage reaches target
+
+This "Red-Green-Refactor" cycle ensures that:
+* Code is testable by design
+* Behavior is well-defined
+* No untested code makes it to main
+
+== Continuous Integration
+
+The project uses CI/CD to automatically:
+
+1. Compile on every commit
+2. Run all tests
+3. Check memory safety
+4. Verify code coverage
+5. Generate coverage reports
+
+If any check fails, the build is marked as broken and changes cannot be merged.
+
+## Troubleshooting Failed Tests
+
+=== Test Hangs
+
+If a test never completes, it's usually waiting on a condition variable:
+
+* Check that `notify_one()` or `notify_all()` is being called
+* Verify the condition variable's predicate is correct
+* Use timeouts in `wait()` to prevent infinite hangs
+
+[source,cpp]
+----
+// BAD: Can hang forever
+cv.wait(lock);
+
+// GOOD: Times out after 5 seconds
+cv.wait_for(lock, std::chrono::seconds(5));
+----
+
+=== Race Conditions in Tests
+
+If a test sometimes passes and sometimes fails:
+
+* The test itself has a race condition
+* Use barriers or synchronized access to eliminate timing issues
+* Never rely on `sleep()` to ensure ordering
+
+=== Memory Leaks Detected by Valgrind
+
+Common causes:
+
+* Missing `delete` for allocated memory
+* Exceptions thrown before cleanup
+* Shared pointers not released
+
+Solution: Use RAII and smart pointers (`std::unique_ptr`, `std::shared_ptr`).
+
+## Related Documentation
+
+* link:../design/readme.adoc[Architecture & Design]
+* link:../workflow.adoc[Development Workflow]
+* link:../readme.adoc[Main Project README]
+
+Copyright © 2026 Anthony García. Licensed under CC BY 4.0.
