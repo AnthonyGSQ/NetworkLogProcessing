@@ -32,8 +32,8 @@ using tcp = asio::ip::tcp;
 
 // HTTP server with thread pool for concurrent request handling.
 // Accepts connections on a specified port and delegates request processing
-// to worker threads. Graceful shutdown is triggered by signals (SIGINT, SIGTERM, SIGTSTP)
-// or through destructor cleanup.
+// to worker threads. Graceful shutdown is triggered by signals (SIGINT,
+// SIGTERM, SIGTSTP) or through destructor cleanup.
 class HttpServer {
    public:
     // Constructor: initializes server for specified IP version and port
