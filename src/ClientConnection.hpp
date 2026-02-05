@@ -18,12 +18,15 @@ namespace http = beast::http;
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-// ClientConnection HEREDA de Task (interfaz polimórfica)
+// Handles a single client HTTP request. Implements Task interface for
+// thread pool execution. Parses HTTP request, validates JSON reservation data,
+// and sends appropriate HTTP response.
 class clientConnection : public Task {
    public:
     explicit clientConnection(tcp::socket socket);
 
-    // Implementa el método puro virtual de Task
+    // Implements Task interface. Called by worker thread.
+    // Reads HTTP request, parses and validates JSON, sends response.
     void execute() override;
 
    private:
@@ -32,7 +35,9 @@ class clientConnection : public Task {
     beast::flat_buffer socketBuffer;
     http::request<http::string_body> httpRequest;
 
+    // Parses request body JSON, validates reservation, builds response
     void processRequest(http::response<http::string_body>& httpResponse);
+    // Sends HTTP error response when exception occurs
     void sendErrorResponse(const std::exception& e) noexcept;
 };
 
