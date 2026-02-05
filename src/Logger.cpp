@@ -4,7 +4,8 @@
 
 Reservation Logger::parseJson(const std::string& jsonFile) {
     Reservation currentReservation;
-
+    // TODO: si el usuario manda un json valido sin esta info, cae en un catch
+    // no muy informativo
     try {
         // parsing json
         boost::json::object currentJson =
@@ -21,8 +22,6 @@ Reservation Logger::parseJson(const std::string& jsonFile) {
         if (!validateJsonFormat(currentReservation)) {
             throw std::invalid_argument("Invalid reservation format");
         }
-    } catch (const std::invalid_argument&) {
-        throw;
     } catch (const std::exception& e) {
         throw std::invalid_argument("JSON parsing failed: " +
                                     std::string(e.what()));
