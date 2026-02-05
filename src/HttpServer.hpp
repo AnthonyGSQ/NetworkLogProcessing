@@ -1,3 +1,11 @@
+/*
+ * Copyright © 2026 Anthony Sanchez
+ * Licensed under CC BY 4.0 (Creative Commons Attribution 4.0 International)
+ * https://creativecommons.org/licenses/by/4.0/
+ *
+ * Network Log Processing - HTTP Server Implementation
+ */
+
 #ifndef HTTPSERVER_HPP
 #define HTTPSERVER_HPP
 
@@ -22,45 +30,51 @@
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
+// HTTP server with thread pool for concurrent request handling.
+// Accepts connections on a specified port and delegates request processing
+// to worker threads. Graceful shutdown is triggered by signals (SIGINT,
+// SIGTERM, SIGTSTP) or through destructor cleanup.
 class HttpServer {
    public:
-    // class constructor which ask for ip version and port to listen
+    // Constructor: initializes server for specified IP version and port
     HttpServer(bool ipv4, int port);
+    // Destructor: triggers graceful shutdown sequence
     ~HttpServer();
+    // Blocks while accepting and processing connections.
+    // Returns when shutdown signal is received.
     void start();
-    // initialize the acceptor tcp object, in case of fail, return false
-    // otherwise, return true
+    // Opens TCP acceptor on configured port. Returns false on failure.
     bool startAcceptor();
 
    private:
     bool ipv4;
     int port;
-    // context initializer of the Http Server
+    // ASIO context managing all I/O operations
     asio::io_context ioc;
-    // configuration of the server
+    // TCP acceptor listening for incoming connections
     tcp::acceptor acceptor{ioc};
-    // thread-safe shutdown mechanism
+    // Thread-safe flag: set to true by signal handler or stop sequence
     std::atomic<bool> shouldStop{false};
     std::mutex serverMutex;
     std::condition_variable cond_var;
-    // ThreadPool para procesar clientes de manera concurrente
-    ThreadPool threadPool{4};  // 4 workers
+    // Worker thread pool (4 threads) for processing client requests
+    ThreadPool threadPool{4};
 
-    // singleton instance for signal handler
+    // Singleton instance for static signal handler callback
     static HttpServer* instance;
     static std::mutex instance_mtx;
 
-    // this function waits until a client connect to the server, starting
-    // the connection and making a thread detach to leave the main thread
-    // free so it can accept more clients.
+    // Accepts incoming connections and enqueues them for processing.
+    // Runs in calling thread of start(). Detects shutdown via shouldStop flag.
     void acceptConnections();
-    // stop server (thread-safe) function
+    // Initiates graceful shutdown: closes acceptor, stops IO context,
+    // and signals worker threads to complete their tasks.
     void stopServer();
-    // for checks if server is running
+    // Thread-safe check of server running state
     bool isRunning() const;
-    // start mutex, signals and singleton
+    // Registers signal handlers (SIGINT, SIGTERM, SIGTSTP) and sets singleton
     void setupSignalHandlers();
-    // static signal handler
+    // Static callback for signal handling. Calls stopServer() on instance.
     static void handleSignal(int signal);
 };
 

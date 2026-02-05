@@ -9,25 +9,28 @@
 #include "BlockingQueue.hpp"
 #include "TaskInterface.hpp"
 
+// Fixed-size thread pool for concurrent task execution.
+// Spawns worker threads that dequeue tasks from a blocking queue
+// and execute them. Supports graceful shutdown via queue.stop().
 class ThreadPool {
    private:
     int workersCount;
-    // queue with task objects, this objects can be (for example),
-    // clientConnections
+    // Blocking queue holding tasks to be executed
     BlockingQueue<std::unique_ptr<Task>> clientsQueue;
+    // Worker threads managed by pool lifetime
     std::vector<std::thread> workers;
 
+    // Worker thread entry point. Continuously dequeues and executes tasks
+    // until queue.stop() is called (pop returns false).
     void workerLoop() {
         std::unique_ptr<Task> task;
         while (true) {
-            // pop() retorna false cuando se llama stop()
+            // pop() returns false when queue is stopped
             if (!clientsQueue.pop(task)) {
                 break;
             }
             try {
-                // Llama al método virtual execute() de la tarea
-                // Polimorfismo: cada tipo de Task implementa execute() a su
-                // manera
+                // Execute polymorphic task (e.g., clientConnection)
                 task->execute();
             } catch (const std::exception& e) {
                 std::cerr << "ThreadPool::workerLoop(): Error, task execution "
@@ -53,12 +56,10 @@ class ThreadPool {
         }
     }
 
-    // enqueueTask es template y acepta cualquier clase derivada de Task
-    // Crea un unique_ptr y lo encola
+    // Template method to enqueue tasks of any type derived from Task.
+    // Perfect forwarding enables efficient handling of move-only types.
     template <typename TaskType>
     void enqueueTask(TaskType&& task) {
-        // std::make_unique crea un objeto en el heap y retorna un unique_ptr
-        // Esto permite pasar objetos move-only (como tcp::socket)
         auto taskPtr = std::make_unique<std::decay_t<TaskType>>(
             std::forward<TaskType>(task));
         clientsQueue.push(std::move(taskPtr));
