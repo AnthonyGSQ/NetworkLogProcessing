@@ -1,105 +1,250 @@
 = Network Log Processing
 
-A high-performance C++ application for collecting, processing, and analyzing HTTP network logs with PostgreSQL storage and statistical reporting capabilities.
+A high-performance, multi-threaded C++ server designed to efficiently process and store HTTP network logs with scalable concurrent architecture and database integration.
 
 == Overview
 
-This application provides a robust solution for network log management by:
+Network Log Processing is an educational yet production-ready project that demonstrates professional C++ development practices. It combines concurrent programming patterns, network I/O, and database integration to create a robust log processing system capable of handling hundreds of concurrent requests.
 
-* Receiving HTTP-formatted log messages from the network
-* Validating and processing incoming log data
-* Storing structured logs in a PostgreSQL database
-* Generating comprehensive statistics and insights from collected data
+The project focuses on:
+
+* Accepting HTTP connections from multiple clients simultaneously
+* Processing incoming log messages concurrently using a thread pool
+* Storing processed logs in a PostgreSQL database
+* Maintaining high availability and graceful shutdown
+
+== Quick Navigation
+
+[cols="1,3"]
+|===
+|*Document*|*Description*
+
+|link:doc/design/readme.adoc[Architecture & Design]
+|Detailed explanation of system components, concurrency model, synchronization mechanisms, and design patterns
+
+|link:doc/workflow.adoc[Development Workflow]
+|Git conventions, commit message format, and branch naming guidelines
+
+|link:doc/testing.adoc[Testing Guidelines]
+|Testing strategies and best practices for this project
+|===
 
 == Features
 
-* *Real-time HTTP Log Processing*: Handles HTTP-formatted network messages
-* *Data Validation*: Ensures log integrity before storage
-* *PostgreSQL Integration*: Efficient database storage and retrieval
-* *Statistical Analysis*: Generate reports and insights from stored logs
-* *Scalable Architecture*: Designed for high-volume log processing
+* *Concurrent HTTP Server*: Thread pool-based architecture handling multiple requests simultaneously
+* *Scalable Design*: Processes hundreds of concurrent connections efficiently
+* *Professional Architecture*: Clean separation of concerns with polymorphic task execution
+* *Database Integration*: PostgreSQL support for persistent log storage
+* *Thread-Safe Operations*: Atomic operations and synchronization primitives
+* *Graceful Shutdown*: Signal handling for safe server termination
 
 == Requirements
 
-* C++17 or higher
-* PostgreSQL 12+
-* Google Test (for testing)
+* C++20 or higher
+* Boost.Beast and Boost.Asio libraries
+* PostgreSQL 12+ (for database features)
+* Google Test (for unit testing)
+* GCC/Clang compiler
 * Make
 
-== Building the Project
+== Getting Started
+
+=== Step 1: Compile the Project
+
+Before running the server or tests, you must compile the code:
 
 [source,bash]
 ----
-make all
+make
 ----
 
-== Running Tests
+This command:
+
+- Creates object files from C++ source code
+
+- Links them into executable binaries
+
+- Produces `./bin/network_log_processor` (main server)
+
+- Produces `./bin/run_tests` (test runner)
+
+.Compilation happens only once unless source code changes
+TIP: If compilation fails, check that all requirements (C++20, Boost libraries) are installed.
+
+=== Step 2: Run the Server
+
+After successful compilation, start the server:
+
+[source,bash]
+----
+./bin/network_log_processor
+----
+
+Expected output:
+[source,text]
+----
+Signal handlers registered (SIGINT, SIGINT, SIGTSTP)
+Server listening on port 8080
+----
+
+To stop the server, press `Ctrl+C` (SIGINT):
+[source,text]
+----
+Server shutting down gracefully..
+----
+
+.Server runs indefinitely until interrupted
+WARNING: The server binds to port 8080. Ensure no other application is using this port.
+
+=== Step 3: Test the Running Server
+
+While the server is running in one terminal, open another terminal and send a test request:
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "owner": "Juan",
+    "expirationDate": "2026-01-25",
+    "category": "deluxe",
+    "cost": 150,
+    "room": 101
+  }'
+----
+
+Expected response:
+[source,http]
+----
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Content-Length: 2
+
+OK
+----
+
+== Testing & Code Coverage
+
+Testing is *separate* from running the server. Use the test suite to validate code correctness:
 
 [source,bash]
 ----
 make test
 ----
 
-This command will run all the google test of the *tests* directory
+This command:
 
-== Merge minimum requirements
+- Compiles all unit tests (via Google Test framework)
 
-[source, bash]
+- Executes the test suite
+
+- Reports test results
+
+- Calculates code coverage percentage
+
+Expected output:
+[source,text]
+----
+[==========] 5 tests from 2 test suites ran
+[  PASSED  ] 5 tests
+----
+
+=== Code Coverage Report
+
+To generate a detailed HTML code coverage report:
+
+[source,bash]
 ----
 make coverage
 ----
 
-This will run all the google test, see if they coverage at least 90% of all the code and check if there is any memory leak using valgrind.
+This command:
 
-== Usage
+- Runs all tests with coverage instrumentation
+
+- Generates an HTML report in `./coverage/index.html`
+
+- Enforces minimum 90% code coverage (project requirement)
+
+- Fails if coverage is below threshold
+
+Open the report in your browser:
+[source,bash]
+----
+open coverage/index.html  # macOS
+xdg-open coverage/index.html  # Linux
+start coverage/index.html  # Windows
+----
+
+.Coverage must exceed 90% for code to be merged
+WARNING: This is a hard requirement for this project. If your changes reduce coverage below 90%, tests will fail.
+
+=== Memory Leak Detection
+
+To check for memory leaks using Valgrind:
 
 [source,bash]
 ----
-# Start the log processor
-./bin/network_log_processor
-
-# View available options
-./bin/network_log_processor --help
+make valgrind
 ----
 
-== HTTP Log Format
+This validates:
 
-The application expects HTTP-formatted messages with the following structure:
+- No heap memory leaks
 
-[source,http]
+- No invalid memory access
+
+- No uninitialized variable usage
+
+- Proper resource cleanup
+
+== Project Structure
+
+[source]
 ----
-POST /log HTTP/1.1
-Host: localhost
-Content-Type: application/json
-Content-Length: <length>
-
-{
-  "timestamp": "2025-12-25T10:30:00Z",
-  "level": "INFO",
-  "message": "Log message here",
-  "source": "192.168.1.100"
-}
+NetworkLogProcessing/
+├── src/                      # Source code
+│   ├── HttpServer.cpp/hpp    # HTTP server implementation
+│   ├── ThreadPool.hpp        # Concurrency management
+│   ├── BlockingQueue.hpp     # Thread-safe queue
+│   ├── TaskInterface.hpp     # Abstract base for tasks
+│   ├── ClientConnection.cpp  # HTTP request processing
+│   ├── Logger.cpp/hpp        # Logging utility
+│   └── main.cpp              # Entry point
+│
+├── tests/                    # Google Test unit tests
+│   ├── HttpTest.cpp          # Server tests
+│   └── LoggerTest.cpp        # Logger tests
+│
+├── doc/                      # Documentation
+│   ├── design/
+│   │   └── readme.adoc       # Architecture details ←→ link:doc/design/readme.adoc[Read]
+│   ├── img/
+│   │   └── NetworkLogProcess.svg
+│   ├── workflow.adoc         # Git conventions ←→ link:doc/workflow.adoc[Read]
+│   └── testing.adoc          # Testing guide ←→ link:doc/testing.adoc[Read]
+│
+├── coverage/                 # Generated code coverage reports
+├── obj/                      # Compiled object files (generated)
+├── bin/                      # Compiled binaries (generated)
+├── Makefile                  # Build configuration
+└── readme.adoc              # This file
 ----
 
-== Database Schema
+== Architecture Highlights
 
-The PostgreSQL database stores logs with the following schema:
+For detailed architecture explanation, see link:doc/design/readme.adoc[Architecture & Design Documentation].
 
-[source,sql]
-----
-CREATE TABLE logs (
-    id SERIAL PRIMARY KEY,
-    timestamp TIMESTAMP NOT NULL,
-    level VARCHAR(20) NOT NULL,
-    message TEXT NOT NULL,
-    source VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-----
+Key components:
+
+* *ThreadPool*: Manages worker threads for concurrent task execution
+* *BlockingQueue*: Thread-safe queue for task distribution
+* *Task Interface*: Polymorphic design for extensible task types
+* *HttpServer*: Non-blocking socket handling with signal support
 
 == Configuration
 
-Database connection settings can be configured via environment variables:
+Environment variables for database connection:
 
 [source,bash]
 ----
@@ -110,27 +255,139 @@ export DB_USER=postgres
 export DB_PASSWORD=your_password
 ----
 
-== Project Structure
+== Common Tasks
 
+=== Build and Run
+
+[source,bash]
 ----
-.
-├── src/          # Source code files
-├── tests/        # Google Test unit tests
-├── doc/          # Documentation
-├── Makefile      # Build configuration
-└── readme.adoc   # This file
+make
+./bin/network_log_processor
 ----
 
-== Development
+=== Run Tests Only
 
-See link:doc/workflow.adoc[workflow documentation] for development guidelines.
+[source,bash]
+----
+make test
+----
 
-See link:doc/testing.adoc[testing documentation] for testing strategies.
+=== Generate Coverage Report
+
+[source,bash]
+----
+make coverage
+----
+
+=== Clean Build Artifacts
+
+[source,bash]
+----
+make clean
+----
+
+=== Development Workflow
+
+Maintaining a professional codebase requires consistent practices across all contributors. Development workflow guidelines ensure that:
+
+* Code changes are organized in logical, descriptive branches
+* Commit history remains readable and traceable for future debugging
+* Pull requests clearly communicate what changed and why
+
+See link:doc/workflow.adoc[Development Workflow] for:
+
+- Branch naming conventions (feature/, bugfix/, hotfix/, chore/)
+
+- Commit message format with scope and description
+
+- Pull request guidelines and code review expectations
+
+=== Testing Strategies
+
+Testing is fundamental to building reliable software. This project enforces a minimum of 90% code coverage to ensure that new features don't introduce regressions and that edge cases are properly handled. The testing strategy combines unit tests for individual components with integration tests for the concurrent system behavior.
+
+Understanding how to write effective tests is as important as writing production code. Tests serve as both a safety net and as documentation that shows how components are intended to be used.
+
+See link:doc/testing.adoc[Testing Guidelines] for:
+
+- Unit test patterns and best practices
+
+- Integration test approach for concurrent systems
+
+- How to write new tests and measure coverage
+
+- Common testing pitfalls and how to avoid them
+
+== Project Goals
+
+This project serves as a learning platform for:
+
+* Professional C++ patterns and practices
+* Concurrent programming and thread management
+* Network programming with Boost libraries
+* Database integration and ORM patterns
+* Unit testing and code coverage best practices
+* Clean architecture and separation of concerns
+
+== Troubleshooting
+
+=== Compilation Errors
+
+*Error: `boost/asio.hpp: No such file or directory`*
+
+- Install Boost libraries: `sudo apt install libboost-dev` (Ubuntu) or `brew install boost` (macOS)
+
+*Error: `g++: command not found`*
+
+- Install GCC: `sudo apt install build-essential` (Ubuntu) or `brew install gcc` (macOS)
+
+=== Runtime Errors
+
+*Error: `Address already in use`*
+
+- Port 8080 is occupied. Change port in `src/HttpServer.cpp` or kill the process using the port
+
+*Error: `Server shutting down gracefully.. (but doesn't stop)`*
+
+- Press Ctrl+C again or use `kill -9 <pid>`
+
+=== Test Failures
+
+*All tests pass locally but fail in CI*
+- Check link:doc/testing.adoc[Testing Guidelines] for environment setup requirements
 
 == License
 
-[Add your license here]
+*Creative Commons Attribution 4.0 International (CC BY 4.0)*
+
+This work is licensed under the Creative Commons Attribution 4.0 International License. You are free to:
+
+* *Share* — copy and redistribute the material in any medium or format
+* *Adapt* — remix, transform, and build upon the material for any purpose, even commercially
+
+*Under the following terms:*
+
+* *Attribution* — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+For more details, visit: https://creativecommons.org/licenses/by/4.0/
+
+.Attribution Example
+[source]
+----
+"Network Log Processing" by AnthonyGSQ is licensed under CC BY 4.0.
+https://github.com/anthonygsq/NetworkLogProcessing
+----
 
 == Authors
 
-AnthonyGSQ
+* *Original Author & Maintainer:* Anthony Sanchez (AnthonyGSQ)
+
+== Copyright
+
+Copyright © 2026 Anthony Sanchez. All rights reserved except as permitted by the CC BY 4.0 license.
+
+== Additional Resources
+
+* link:doc/design/readme.adoc[Full Architecture Documentation]
+* link:doc/workflow.adoc[Git Workflow Guide]
+* link:doc/testing.adoc[Testing Best Practices]
