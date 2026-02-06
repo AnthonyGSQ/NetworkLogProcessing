@@ -74,7 +74,7 @@ void HttpServer::acceptConnections() {
             threadPool.enqueueTask(std::move(client));
 
         } catch (const std::exception& e) {
-            if (shouldStop) {
+            if (!shouldStop) {
                 std::cerr << "HttpServer::acceptConnections(): error accepting "
                              "connections: "
                           << e.what() << "\n";
