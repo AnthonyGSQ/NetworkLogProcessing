@@ -1,57 +1,95 @@
-= Hotel Reservation System
+= Network Log Processing — High-Performance HTTP Server
 
-A high-performance, multi-threaded C++ server for processing and storing hotel room reservations with scalable concurrent architecture and PostgreSQL database integration.
+A production-quality HTTP server demonstrating enterprise C++ patterns: concurrent request handling via thread pool, safe concurrency design, and comprehensive code quality standards.
 
-==  Project Overview
+== Overview
 
-This is a **professional-grade hotel reservation system** built in C++20 that demonstrates enterprise software development practices. Clients submit reservation requests via HTTP, which are validated, processed concurrently, and persisted in a PostgreSQL database.
+This project showcases core competencies in concurrent systems design: building a thread-safe HTTP server that handles multiple simultaneous connections efficiently without the pitfalls of naive threading (thread-per-request overhead, cache thrashing, memory explosion at scale).
 
-=== Core Capabilities
+The implementation demonstrates:
 
-* **Accept concurrent reservations** from multiple clients simultaneously
-* **Process requests** using a thread pool for scalable concurrency
-* **Validate data** comprehensively (dates, prices, guest info)
-* **Store reservations** persistently in PostgreSQL
-* **Manage lifecycle** with graceful shutdown and signal handling
+* **Thread pool architecture** — fixed-size worker pool + blocking queue (solves real scaling problems)
 
-==  Documentation
+* **Safe concurrency** — atomic flags, condition variables, thread-safe patterns without deadlocks
 
-For complete setup instructions, architecture details, how to run everything, and troubleshooting, see:
+* **Production code quality** — 90% code coverage, zero memory leaks (valgrind verified), strict compilation flags
 
-[cols="2,4"]
+* **Clean architecture** — separation of concerns, RAII ownership patterns, minimal coupling
+
+== What's Implemented
+
+[cols="1,4"]
 |===
-|Document|Purpose
+|Component|Status
 
-|link:doc/design/readme.adoc[**Architecture & Design**]
-|Complete technical guide including: system design, setup instructions, database configuration, how to compile and run, testing, and all technical details
+|**HttpServer (Boost.Asio)**
+|Fully functional. Binds to configurable port, accepts TCP connections, dispatches to worker pool. Signal handling (SIGINT, SIGTERM, SIGTSTP) for graceful shutdown.
 
-|link:doc/workflow.adoc[Development Workflow]
-|Git conventions, branch naming, commit message format
+|**ThreadPool + BlockingQueue**
+|Complete. Fixed 4-worker pool with thread-safe queue. Workers pull tasks from queue, execute, wait for next task. Efficient lock management.
 
-|link:doc/testing.adoc[Testing Guidelines]
-|Unit testing strategies, coverage requirements, test execution
+|**ClientConnection Handler**
+|Implemented. Each incoming connection wrapped as Task, enqueued, executed on worker thread.
+
+|**Logging**
+|Thread-safe logging infrastructure for debugging concurrent operations.
+
+|**Testing**
+|Unit tests using Google Test. Coverage validation (90% minimum). Memory leak detection (valgrind).
 |===
 
-==  Key Features
+== What's NOT Implemented
 
-* **Concurrent HTTP Server** — Thread pool with 4 worker threads
-* **Thread-Safe Database** — PostgreSQL integration via libpqxx
-* **Input Validation** — Comprehensive JSON schema validation
-* **Graceful Shutdown** — Signal handling (SIGINT, SIGTERM, SIGTSTP)
-* **Professional Logging** — Structured logging for debugging
-* **Code Coverage** — Minimum 90% coverage enforced
-* **Memory Safe** — RAII patterns, smart pointers, no memory leaks
+* **HTTP Endpoints** — Server accepts connections but doesn't parse/respond to HTTP requests yet
+* **PostgreSQL Integration** — Database layer is skeleton only. Shows intent, demonstrates interface design
+* **Request Validation** — No JSON parsing or input validation (scope for future)
+* **Business Logic** — No application-level processing
 
-==  Requirements
+*These are intentional.* Focus is demonstrating architectural patterns and code quality, not feature completeness.
 
-* C++20 (GCC/Clang)
-* Boost (Beast, Asio, JSON)
-* libpqxx (PostgreSQL driver)
-* PostgreSQL 12+
-* Google Test (testing)
-* Make (build)
+== Quick Start
 
-==  License
+=== Build
+[source,bash]
+----
+make clean && make all
+----
+
+=== Run Server
+[source,bash]
+----
+./bin/network_log_processor
+----
+Listens on `127.0.0.1:8080`. Connect with any TCP client (e.g., netcat, telnet) to trigger worker thread dispatch.
+
+=== Run Tests
+[source,bash]
+----
+make test              # Run tests + enforce 90% coverage
+make coverage          # Generate HTML coverage report
+make valgrind          # Memory leak check
+----
+
+== Architecture Highlights
+
+*Concurrency Model:* Fixed thread pool avoids the thread-per-request anti-pattern.
+
+*Design Patterns:*
+* Producer-Consumer (HttpServer → BlockingQueue → ThreadPool)
+* RAII (automatic resource cleanup, no manual memory management)
+* Thread-safe singleton patterns where needed
+
+For detailed technical discussion, design decisions, and performance trade-offs, see link:doc/design/readme.adoc[Architecture & Design].
+
+== Requirements
+
+* C++20 (GCC 11+ / Clang 13+)
+* Boost 1.74+ (asio, beast)
+* Google Test (for testing)
+* Make
+* `valgrind` (optional, for memory verification)
+
+== License
 
 Copyright © 2026 Anthony Sanchez  
 Licensed under CC BY 4.0 (Creative Commons Attribution 4.0 International)  
