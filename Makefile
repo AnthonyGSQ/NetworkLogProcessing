@@ -1,14 +1,16 @@
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror
 COVERAGE_FLAGS = --coverage
-LDFLAGS = -lboost_json
+# Add libpqxx for PostgreSQL support
+LDFLAGS = -lboost_json -lpqxx -lpq
 
 SRC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
 TEST_DIR = tests
 
-SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
+# Find all .cpp files in src/ and its subdirectories (including config/)
+SOURCES = $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/**/*.cpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 TARGET = $(BIN_DIR)/network_log_processor
 
@@ -23,8 +25,10 @@ $(TARGET): $(OBJECTS)
 	mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) $^ -o $@ $(LDFLAGS)
 
+# Pattern rule: src/any/file.cpp → obj/any/file.o
+# The % matches the path component (e.g., config/ConfigManager)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	mkdir -p $(OBJ_DIR)
+	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(COVERAGE_FLAGS) -c $< -o $@
 
 $(OBJ_DIR)/test_%.o: $(TEST_DIR)/%.cpp
