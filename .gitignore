@@ -8,6 +8,11 @@ coverage.html
 
 Makefile.user
 
+# Environment variables and secrets - NEVER commit these
+.env
+.env.local
+.env.*.local
+
 .vscode/
 .idea/
 *.swp
