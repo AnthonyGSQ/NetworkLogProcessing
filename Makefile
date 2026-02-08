@@ -70,6 +70,10 @@ instdeps:
 		gtest-devel \
 		gcovr \
 		boost-devel \
+		libpqxx-devel \
+		libpq-devel \
+		postgresql-devel \
+		clang-tools-extra \
 		valgrind
 
 format:

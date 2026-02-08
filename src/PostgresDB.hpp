@@ -2,7 +2,7 @@
 #define POSTGRESDB_HPP
 
 #include "Logger.hpp"
-#include <pqxx/pqxx.h>
+#include <pqxx/pqxx>
 #include <string>
 #include <stdexcept>
 

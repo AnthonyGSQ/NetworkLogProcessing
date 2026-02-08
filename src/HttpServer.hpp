@@ -17,8 +17,11 @@
 #include <boost/asio.hpp>
 // for concurrency
 #include <thread>
+#include <memory>
 
 #include "ThreadPool.hpp"
+#include "PostgresDB.hpp"
+#include "config/ConfigManager.hpp"
 
 // shutdown (thread-safe) librarys
 #include <atomic>
@@ -37,7 +40,7 @@ using tcp = asio::ip::tcp;
 class HttpServer {
    public:
     // Constructor: initializes server for specified IP version and port
-    HttpServer(bool ipv4, int port);
+    HttpServer(const ConfigManager& config, bool ipv4, int port);
     // Destructor: triggers graceful shutdown sequence
     ~HttpServer();
     // Blocks while accepting and processing connections.
@@ -49,6 +52,7 @@ class HttpServer {
    private:
     bool ipv4;
     int port;
+    std::unique_ptr<PostgresDB> database;
     // ASIO context managing all I/O operations
     asio::io_context ioc;
     // TCP acceptor listening for incoming connections

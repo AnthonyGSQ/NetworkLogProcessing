@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 
 #include "Logger.hpp"
+#include "PostgresDB.hpp"
 // Task interface
 #include "TaskInterface.hpp"
 
@@ -23,7 +24,7 @@ using tcp = asio::ip::tcp;
 // and sends appropriate HTTP response.
 class clientConnection : public Task {
    public:
-    explicit clientConnection(tcp::socket socket);
+    explicit clientConnection(tcp::socket socket, PostgresDB* db);
 
     // Implements Task interface. Called by worker thread.
     // Reads HTTP request, parses and validates JSON, sends response.
@@ -31,6 +32,7 @@ class clientConnection : public Task {
 
    private:
     Logger log;
+    PostgresDB* db;
     tcp::socket clientSocket;
     beast::flat_buffer socketBuffer;
     http::request<http::string_body> httpRequest;

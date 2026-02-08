@@ -148,26 +148,26 @@ bool PostgresDB::insertReservation(const Reservation& res) {
          * With raw string: no escaping needed
          */
         
-        // Execute with parameters
-        txn.exec_params(insertQuery,
-            // Guest info ($1, $2, $3)
-            res.guest_name, res.guest_email, res.guest_phone,
-            
-            // Reservation info ($4, $5, $6)
-            res.room_number, res.room_type, res.number_of_guests,
-            
-            // Dates ($7, $8, $9)
-            res.check_in_date, res.check_out_date, res.number_of_nights,
-            
-            // Cost ($10, $11, $12, $13)
-            res.price_per_night, res.total_price, res.payment_method, res.paid,
-            
-            // Status ($14, $15)
-            res.reservation_status, res.special_requests,
-            
-            // Metadata ($16, $17)
-            res.created_at, res.updated_at
-        );
+        // Execute with parameters using new pqxx API
+        pqxx::params p;
+        p.append(res.guest_name);
+        p.append(res.guest_email);
+        p.append(res.guest_phone);
+        p.append(res.room_number);
+        p.append(res.room_type);
+        p.append(res.number_of_guests);
+        p.append(res.check_in_date);
+        p.append(res.check_out_date);
+        p.append(res.number_of_nights);
+        p.append(res.price_per_night);
+        p.append(res.total_price);
+        p.append(res.payment_method);
+        p.append(res.paid);
+        p.append(res.reservation_status);
+        p.append(res.special_requests);
+        p.append(res.created_at);
+        p.append(res.updated_at);
+        txn.exec(insertQuery, p);
         
         // Step 4: Commit the transaction
         txn.commit();
@@ -227,8 +227,10 @@ Reservation PostgresDB::getReservationById(int id) {
             WHERE id = $1
         )";
         
-        // Execute with ID parameter
-        auto result = txn.exec_params(selectQuery, id);
+        // Execute with ID parameter using new pqxx API
+        pqxx::params p;
+        p.append(id);
+        auto result = txn.exec(selectQuery, p);
         
         /*
          * exec_params returns a result set
@@ -247,30 +249,28 @@ Reservation PostgresDB::getReservationById(int id) {
         
         // Create Reservation object from row data
         Reservation res;
-        // guess contact information
+        // guest contact information
         res.guest_name = row[0].as<std::string>();
         res.guest_email = row[1].as<std::string>();
-        res.guest_phone = row[3].as<std::string>();
+        res.guest_phone = row[2].as<std::string>();
         // room information
-        res.room_number = row[4].as<int>();
-        res.room_type = row[5].as<std::string>();
-        res.number_of_guests = row[6].as<int>();
+        res.room_number = row[3].as<int>();
+        res.room_type = row[4].as<std::string>();
+        res.number_of_guests = row[5].as<int>();
         // dates information
-        res.check_in_date = row[7].as<std::string>();
-        res.check_out_date = row[8].as<std::string>();
-        res.number_of_nights = row[9].as<std::string>();
+        res.check_in_date = row[6].as<std::string>();
+        res.check_out_date = row[7].as<std::string>();
+        res.number_of_nights = row[8].as<int>();
         // price and payment information
-        res.price_per_night = row[10].as<std::string>();
-        res.total_price = row[11].as<std::string>();
-        res.payment_method = row[12].as<std::string>();
-        res.total_price = row[13].as<std::string>();
-        res.payment_method = row[14].as<std::string>();
-        res.paid = row[15].as<std::string>();
+        res.price_per_night = row[9].as<double>();
+        res.total_price = row[10].as<double>();
+        res.payment_method = row[11].as<std::string>();
+        res.paid = row[12].as<bool>();
         // extra information of the reservation
-        res.reservation_status = row[16].as<std::string>();
-        res.special_requests = row[17].as<std::string>();
-        res.created_at = row[17].as<std::string>();
-        res.updated_at = row[17].as<std::string>();
+        res.reservation_status = row[13].as<std::string>();
+        res.special_requests = row[14].as<std::string>();
+        res.created_at = row[15].as<long>();
+        res.updated_at = row[16].as<long>();
         txn.commit();
         return res;
         
@@ -303,15 +303,25 @@ bool PostgresDB::updateReservation(int id, const Reservation& res) {
             WHERE id = $17
         )";
         
-        txn.exec_params(updateQuery,
-            res.guest_name, res.guest_email, res.guest_phone,
-            res.room_number, res.room_type, res.number_of_guests,
-            res.check_in_date, res.check_out_date, res.number_of_nights,
-            res.price_per_night, res.total_price, res.payment_method, res.paid,
-            res.reservation_status, res.special_requests,
-            res.updated_at,
-            id  // $17 - the WHERE id = $17
-        );
+        pqxx::params p;
+        p.append(res.guest_name);
+        p.append(res.guest_email);
+        p.append(res.guest_phone);
+        p.append(res.room_number);
+        p.append(res.room_type);
+        p.append(res.number_of_guests);
+        p.append(res.check_in_date);
+        p.append(res.check_out_date);
+        p.append(res.number_of_nights);
+        p.append(res.price_per_night);
+        p.append(res.total_price);
+        p.append(res.payment_method);
+        p.append(res.paid);
+        p.append(res.reservation_status);
+        p.append(res.special_requests);
+        p.append(res.updated_at);
+        p.append(id);
+        txn.exec(updateQuery, p);
         
         txn.commit();
         
@@ -334,7 +344,10 @@ bool PostgresDB::deleteReservation(int id) {
         pqxx::work txn(conn);
         
         std::string deleteQuery = "DELETE FROM reservations WHERE id = $1";
-        txn.exec_params(deleteQuery, id);
+        
+        pqxx::params p;
+        p.append(id);
+        txn.exec(deleteQuery, p);
         
         txn.commit();
         

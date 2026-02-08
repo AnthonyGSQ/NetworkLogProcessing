@@ -7,8 +7,15 @@
 
 HttpServer* HttpServer::instance = nullptr;
 std::mutex HttpServer::instance_mtx;
-HttpServer::HttpServer(bool ipv4, int port)
+HttpServer::HttpServer(const ConfigManager& config, bool ipv4, int port)
     : ipv4(ipv4), port(port), acceptor(ioc) {
+    try {
+        database = std::make_unique<PostgresDB>(config);
+        std::cout << "[HttpServer] Database connection initialized\n";
+    } catch (const std::exception& e) {
+        std::cerr << "[HttpServer] Failed to initialize database: " << e.what() << "\n";
+        throw;
+    }
     this->setupSignalHandlers();
 }
 
@@ -65,8 +72,8 @@ void HttpServer::acceptConnections() {
             acceptor.accept(currentSocket);
 
             // Creamos una instancia de clientConnection (que hereda de Task)
-            // El constructor recibe el socket y lo mueve internamente
-            clientConnection client(std::move(currentSocket));
+            // El constructor recibe el socket, db pointer y lo mueve internamente
+            clientConnection client(std::move(currentSocket), database.get());
 
             // Encolamos la tarea directamente
             // threadPool.enqueueTask() es template y acepta cualquier derivada

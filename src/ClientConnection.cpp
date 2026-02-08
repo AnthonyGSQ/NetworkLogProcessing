@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-clientConnection::clientConnection(tcp::socket socket)
-    : clientSocket(std::move(socket)) {}
+clientConnection::clientConnection(tcp::socket socket, PostgresDB* db)
+    : db(db), clientSocket(std::move(socket)) {}
 
 void clientConnection::execute() {
     try {
@@ -24,10 +24,31 @@ void clientConnection::execute() {
 
 void clientConnection::processRequest(
     http::response<http::string_body>& httpResponse) {
-    // TODO: after we parseJson, we need to save the reservation
-    log.parseJson(httpRequest.body());
-    httpResponse.result(http::status::ok);
-    httpResponse.body() = "OK";
+    try {
+        // Parse JSON from request body
+        Reservation reservation = log.parseJson(httpRequest.body());
+        
+        // Insert into database if db connection is available
+        if (db != nullptr) {
+            if (db->insertReservation(reservation)) {
+                httpResponse.result(http::status::ok);
+                httpResponse.body() = "Reservation saved successfully\n";
+                std::cout << "[ClientConnection] Reservation inserted into database\n";
+            } else {
+                httpResponse.result(http::status::internal_server_error);
+                httpResponse.body() = "Failed to save reservation to database";
+                std::cerr << "[ClientConnection] Failed to insert reservation\n";
+            }
+        } else {
+            httpResponse.result(http::status::internal_server_error);
+            httpResponse.body() = "Database connection not available";
+            std::cerr << "[ClientConnection] Database pointer is null\n";
+        }
+    } catch (const std::exception& e) {
+        httpResponse.result(http::status::bad_request);
+        httpResponse.body() = std::string("Error: ") + e.what();
+        std::cerr << "[ClientConnection] Exception: " << e.what() << "\n";
+    }
 }
 
 void clientConnection::sendErrorResponse(const std::exception& e) noexcept {
