@@ -16,11 +16,11 @@
 // Network, sockets, I/O
 #include <boost/asio.hpp>
 // for concurrency
-#include <thread>
 #include <memory>
+#include <thread>
 
-#include "ThreadPool.hpp"
 #include "PostgresDB.hpp"
+#include "ThreadPool.hpp"
 #include "config/ConfigManager.hpp"
 
 // shutdown (thread-safe) librarys

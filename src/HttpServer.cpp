@@ -13,7 +13,8 @@ HttpServer::HttpServer(const ConfigManager& config, bool ipv4, int port)
         database = std::make_unique<PostgresDB>(config);
         std::cout << "[HttpServer] Database connection initialized\n";
     } catch (const std::exception& e) {
-        std::cerr << "[HttpServer] Failed to initialize database: " << e.what() << "\n";
+        std::cerr << "[HttpServer] Failed to initialize database: " << e.what()
+                  << "\n";
         throw;
     }
     this->setupSignalHandlers();
@@ -72,7 +73,8 @@ void HttpServer::acceptConnections() {
             acceptor.accept(currentSocket);
 
             // Creamos una instancia de clientConnection (que hereda de Task)
-            // El constructor recibe el socket, db pointer y lo mueve internamente
+            // El constructor recibe el socket, db pointer y lo mueve
+            // internamente
             clientConnection client(std::move(currentSocket), database.get());
 
             // Encolamos la tarea directamente

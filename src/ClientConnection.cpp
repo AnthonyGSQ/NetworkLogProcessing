@@ -8,7 +8,7 @@ clientConnection::clientConnection(tcp::socket socket, PostgresDB* db)
 void clientConnection::execute() {
     try {
         http::read(clientSocket, socketBuffer, httpRequest);
-        //std::cout << "Log:\n" << httpRequest.body() << "\n";
+        // std::cout << "Log:\n" << httpRequest.body() << "\n";
 
         http::response<http::string_body> httpResponse;
         processRequest(httpResponse);
@@ -27,17 +27,19 @@ void clientConnection::processRequest(
     try {
         // Parse JSON from request body
         Reservation reservation = log.parseJson(httpRequest.body());
-        
+
         // Insert into database if db connection is available
         if (db != nullptr) {
             if (db->insertReservation(reservation)) {
                 httpResponse.result(http::status::ok);
                 httpResponse.body() = "Reservation saved successfully\n";
-                std::cout << "[ClientConnection] Reservation inserted into database\n";
+                std::cout << "[ClientConnection] Reservation inserted into "
+                             "database\n";
             } else {
                 httpResponse.result(http::status::internal_server_error);
                 httpResponse.body() = "Failed to save reservation to database";
-                std::cerr << "[ClientConnection] Failed to insert reservation\n";
+                std::cerr
+                    << "[ClientConnection] Failed to insert reservation\n";
             }
         } else {
             httpResponse.result(http::status::internal_server_error);
