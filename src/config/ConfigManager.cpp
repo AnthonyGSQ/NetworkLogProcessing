@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 
-ConfigManager::ConfigManager(const std::string& envFilePath) {
+ConfigManager::ConfigManager(const std::string& recEnvFilePath) : envFilePath(recEnvFilePath) {
     /*
      * Constructor flow:
      * 1. Load the file (parse all key=value pairs)

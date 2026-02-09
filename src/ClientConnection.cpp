@@ -8,7 +8,7 @@ clientConnection::clientConnection(tcp::socket socket, PostgresDB* db)
 void clientConnection::execute() {
     try {
         http::read(clientSocket, socketBuffer, httpRequest);
-        std::cout << "Log:\n" << httpRequest.body() << "\n";
+        //std::cout << "Log:\n" << httpRequest.body() << "\n";
 
         http::response<http::string_body> httpResponse;
         processRequest(httpResponse);

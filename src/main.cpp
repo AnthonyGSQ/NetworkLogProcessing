@@ -5,7 +5,7 @@
 
 int main() {
     try {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 8080);
         server.start();
     } catch (const std::exception& e) {

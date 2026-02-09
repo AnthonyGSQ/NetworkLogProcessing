@@ -321,9 +321,16 @@ bool PostgresDB::updateReservation(int id, const Reservation& res) {
         p.append(res.special_requests);
         p.append(res.updated_at);
         p.append(id);
-        txn.exec(updateQuery, p);
+        
+        pqxx::result result = txn.exec(updateQuery, p);
         
         txn.commit();
+        
+        // Check if any row was actually updated
+        if (result.affected_rows() == 0) {
+            std::cerr << "[PostgresDB] No reservation found with ID: " << id << std::endl;
+            return false;
+        }
         
         std::cout << "[PostgresDB] Reservation " << id << " updated" << std::endl;
         return true;
@@ -332,6 +339,7 @@ bool PostgresDB::updateReservation(int id, const Reservation& res) {
         std::cerr << "[PostgresDB] Error updating reservation: " << e.what() << std::endl;
         return false;
     }
+    return false;
 }
 
 bool PostgresDB::deleteReservation(int id) {
@@ -347,9 +355,15 @@ bool PostgresDB::deleteReservation(int id) {
         
         pqxx::params p;
         p.append(id);
-        txn.exec(deleteQuery, p);
+        pqxx::result result = txn.exec(deleteQuery, p);
         
         txn.commit();
+        
+        // Check if any row was actually deleted
+        if (result.affected_rows() == 0) {
+            std::cerr << "[PostgresDB] No reservation found with ID: " << id << std::endl;
+            return false;
+        }
         
         std::cout << "[PostgresDB] Reservation " << id << " deleted" << std::endl;
         return true;

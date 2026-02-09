@@ -16,7 +16,7 @@ public:
      * param: envFilePath - path to .env file (default: ".env")
      * throws: std::runtime_error if file doesn't exist or required fields missing
      */
-    explicit ConfigManager(const std::string& envFilePath = ".env");
+    explicit ConfigManager(const std::string& envFilePath);
     
     /**
      * Retrieve a configuration value as string
@@ -43,6 +43,7 @@ public:
     bool has(const std::string& key) const;
     
 private:
+    const std::string& envFilePath;
     // Storage: maps key → value (e.g., "DB_HOST" → "127.0.0.1")
     std::map<std::string, std::string> config;
     
