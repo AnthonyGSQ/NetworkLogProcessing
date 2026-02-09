@@ -15,7 +15,7 @@
 // Helper function to delete test data from database
 static void cleanupTestData(const std::string& guestNamePattern) {
     try {
-        ConfigManager config;
+        ConfigManager config(".env");
         
         // Build connection string from config
         std::ostringstream oss;
@@ -88,7 +88,7 @@ TEST(HttpServer, ConstructorIpv4) {
     std::string testGuest = "IPv4Guest";
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18080);
         sync_point.arrive_and_wait();
         server.start();
@@ -116,7 +116,7 @@ TEST(HttpServer, ConstructorIpv6) {
     std::barrier sync_point(2);
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, false, 18081);
         sync_point.arrive_and_wait();
         server.start();
@@ -140,7 +140,7 @@ TEST(HttpServer, ConstructorIpv6) {
 }
 
 TEST(HttpServer, NegativePort) {
-    ConfigManager config;
+    ConfigManager config(".env");
     HttpServer server(config, true, -100);
     server.start();
 }
@@ -149,7 +149,7 @@ TEST(HttpServer, PortAlreadyInUse) {
     std::barrier sync_point(2);
 
     std::thread server1_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18090);
         sync_point.arrive_and_wait();
         server.start();
@@ -166,7 +166,7 @@ TEST(HttpServer, PortAlreadyInUse) {
     
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-    ConfigManager config;
+    ConfigManager config(".env");
     HttpServer server2(config, true, 18090);
     server2.start();
     kill(getpid(), SIGINT);
@@ -180,7 +180,7 @@ TEST(HttpServer, InvalidJsonRequest) {
     std::barrier sync_point(2);
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18091);
         sync_point.arrive_and_wait();
         server.start();
@@ -204,7 +204,7 @@ TEST(HttpServer, MissingRequiredFields) {
     std::barrier sync_point(2);
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18093);
         sync_point.arrive_and_wait();
         server.start();
@@ -229,7 +229,7 @@ TEST(HttpServer, ConcurrentValidRequests) {
     std::barrier sync_point(2);
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18094);
         sync_point.arrive_and_wait();
         server.start();
@@ -266,7 +266,7 @@ TEST(HttpServer, ConcurrentMixedRequests) {
     std::barrier sync_point(2);
 
     std::thread server_thread([&sync_point]() {
-        ConfigManager config;
+        ConfigManager config(".env");
         HttpServer server(config, true, 18095);
         sync_point.arrive_and_wait();
         server.start();
