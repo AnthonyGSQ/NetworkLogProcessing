@@ -66,6 +66,14 @@ TEST(Logger, ValidateJsonFormat_InvalidEmail) {
     EXPECT_FALSE(logger.validateJsonFormat(res));
 }
 
+TEST(Logger, ValidateJsonFormat_EmptyEmail) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
 TEST(Logger, ValidateJsonFormat_InvalidRoom) {
     Logger logger;
     Reservation res;
@@ -75,12 +83,161 @@ TEST(Logger, ValidateJsonFormat_InvalidRoom) {
     EXPECT_FALSE(logger.validateJsonFormat(res));
 }
 
+TEST(Logger, ValidateJsonFormat_InvalidRoomZero) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 0;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_EmptyRoomType) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidGuestsCount) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 0;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_EmptyCheckInDate) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "";
+    res.check_out_date = "2026-02-20";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_EmptyCheckOutDate) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_CheckInAfterCheckOut) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-20";
+    res.check_out_date = "2026-02-15";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_CheckInEqualsCheckOut) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-15";
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidNights) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 0;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
 TEST(Logger, ValidateJsonFormat_InvalidPrice) {
     Logger logger;
     Reservation res;
     res.guest_name = "Juan";
     res.guest_email = "juan@example.com";
     res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 5;
     res.price_per_night = -50;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidPriceZero) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 5;
+    res.price_per_night = 0;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidTotalPrice) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 5;
+    res.price_per_night = 50;
+    res.total_price = -250;
+    EXPECT_FALSE(logger.validateJsonFormat(res));
+}
+
+TEST(Logger, ValidateJsonFormat_InvalidPaymentMethod) {
+    Logger logger;
+    Reservation res;
+    res.guest_name = "Juan";
+    res.guest_email = "juan@example.com";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 5;
+    res.price_per_night = 50;
+    res.total_price = 250;
+    res.payment_method = "";
     EXPECT_FALSE(logger.validateJsonFormat(res));
 }

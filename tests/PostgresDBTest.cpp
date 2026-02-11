@@ -67,7 +67,8 @@ TEST(PostgresDB, InsertValidReservation) {
     Reservation res = createBaseReservation();
     res.room_number = 101;  // Único identificador: room 101
 
-    EXPECT_TRUE(db.insertReservation(res));
+    int id = db.insertReservation(res);
+    EXPECT_NE(id, -1) << "Reservation should be inserted with a valid ID";
 
     cleanupTestData();
 }
@@ -81,7 +82,9 @@ TEST(PostgresDB, InsertMultipleReservations) {
     for (int i = 0; i < 3; i++) {
         Reservation res = createBaseReservation();
         res.room_number = 102 + i;  // Rooms 102, 103, 104 - sin overlap
-        EXPECT_TRUE(db.insertReservation(res));
+        int id = db.insertReservation(res);
+        EXPECT_NE(id, -1) << "Room " << (102 + i)
+                          << " should be inserted successfully";
     }
 
     cleanupTestData();
@@ -95,14 +98,15 @@ TEST(PostgresDB, OverlappingReservationsRejected) {
     // First insertion
     Reservation res1 = createBaseReservation();
     res1.room_number = 105;
-    EXPECT_TRUE(db.insertReservation(res1));
+    int id1 = db.insertReservation(res1);
+    EXPECT_NE(id1, -1) << "First insertion should succeed";
 
     // Try to insert same room, same dates (should FAIL)
     Reservation res2 = createBaseReservation();
     res2.room_number = 105;           // Same room
     res2.guest_name = "María López";  // Different guest, pero mismo room+dates
-    EXPECT_FALSE(db.insertReservation(res2))
-        << "Overlapping reservations should be rejected";
+    int id2 = db.insertReservation(res2);
+    EXPECT_EQ(id2, -1) << "Overlapping reservations should be rejected";
 
     cleanupTestData();
 }
@@ -116,14 +120,17 @@ TEST(PostgresDB, SameRoomDifferentDates) {
     // First: Room 106, Feb 15-18
     Reservation res1 = createBaseReservation();
     res1.room_number = 106;
-    EXPECT_TRUE(db.insertReservation(res1));
+    int id1 = db.insertReservation(res1);
+    EXPECT_NE(id1, -1) << "First reservation should succeed";
 
     // Second: Room 106, Feb 20-23 (same room, different dates - should SUCCEED)
     Reservation res2 = createBaseReservation();
     res2.room_number = 106;
     res2.check_in_date = "2026-02-20";
     res2.check_out_date = "2026-02-23";
-    EXPECT_TRUE(db.insertReservation(res2));
+    int id2 = db.insertReservation(res2);
+    EXPECT_NE(id2, -1)
+        << "Second reservation with different dates should succeed";
 
     cleanupTestData();
 }
@@ -137,7 +144,8 @@ TEST(PostgresDB, BoundaryOverlapRejected) {
     // First: Room 107, Feb 15-18
     Reservation res1 = createBaseReservation();
     res1.room_number = 107;
-    EXPECT_TRUE(db.insertReservation(res1));
+    int id1 = db.insertReservation(res1);
+    EXPECT_NE(id1, -1) << "First reservation should succeed";
 
     // Try Room 107, Feb 18-20 (checkout=checkin boundary, overlap) - SHOULD
     // FAIL
@@ -145,33 +153,68 @@ TEST(PostgresDB, BoundaryOverlapRejected) {
     res2.room_number = 107;
     res2.check_in_date = "2026-02-18";
     res2.check_out_date = "2026-02-20";
-    EXPECT_FALSE(db.insertReservation(res2))
-        << "Boundary overlap should be rejected";
+    int id2 = db.insertReservation(res2);
+    EXPECT_EQ(id2, -1) << "Boundary overlap should be rejected";
 
     cleanupTestData();
 }
-// Test retrieving a reservation by ID
-TEST(PostgresDB, GetReservationById) {
+// Test retrieving a reservation by ID - Non-existent ID should throw
+TEST(PostgresDB, GetReservationByIdNotFound) {
+    cleanupTestData();
     ConfigManager config(".env");
     PostgresDB db(config);
 
-    // Try to get non-existent ID - should throw
-    try {
-        Reservation res = db.getReservationById(999999);
-        FAIL() << "Should throw exception for non-existent ID";
-    } catch (const std::runtime_error& e) {
-        EXPECT_NE(std::string(e.what()).find("not found"), std::string::npos);
-    }
-    Reservation res = createBaseReservation();
-    res.room_number = 108;
-    res.check_in_date = "2026-02-18";
-    res.check_out_date = "2026-02-20";
-    db.insertReservation(res);
-    db.getReservationById();
+    // Try to get non-existent ID - should throw std::runtime_error
+    EXPECT_THROW(
+        { Reservation res = db.getReservationById(999999); },
+        std::runtime_error);
+
+    cleanupTestData();
 }
 
-// Test updating a reservation
-TEST(PostgresDB, UpdateReservation) {
+// Test retrieving a reservation by ID - Existing ID should return correct data
+TEST(PostgresDB, GetReservationByIdExists) {
+    cleanupTestData();
+    ConfigManager config(".env");
+    PostgresDB db(config);
+
+    // Insert a reservation with unique room to ensure predictable data
+    Reservation original = createBaseReservation();
+    original.room_number = 150;
+    original.guest_name = "TESTING_OWNER";
+    original.guest_email = "getbyid@test.com";
+    original.room_type = "Suite";
+    original.number_of_guests = 4;
+    int insertedId = db.insertReservation(original);
+    ASSERT_NE(insertedId, -1) << "Reservation should be inserted successfully";
+
+    // Now retrieve the reservation by ID
+    Reservation retrieved = db.getReservationById(insertedId);
+
+    // Verify all fields match
+    EXPECT_EQ(retrieved.guest_name, original.guest_name);
+    EXPECT_EQ(retrieved.guest_email, original.guest_email);
+    EXPECT_EQ(retrieved.guest_phone, original.guest_phone);
+    EXPECT_EQ(retrieved.room_number, original.room_number);
+    EXPECT_EQ(retrieved.room_type, original.room_type);
+    EXPECT_EQ(retrieved.number_of_guests, original.number_of_guests);
+    EXPECT_EQ(retrieved.check_in_date, original.check_in_date);
+    EXPECT_EQ(retrieved.check_out_date, original.check_out_date);
+    EXPECT_EQ(retrieved.number_of_nights, original.number_of_nights);
+    EXPECT_EQ(retrieved.price_per_night, original.price_per_night);
+    EXPECT_EQ(retrieved.total_price, original.total_price);
+    EXPECT_EQ(retrieved.payment_method, original.payment_method);
+    EXPECT_EQ(retrieved.paid, original.paid);
+    EXPECT_EQ(retrieved.reservation_status, original.reservation_status);
+    EXPECT_EQ(retrieved.special_requests, original.special_requests);
+    EXPECT_EQ(retrieved.created_at, original.created_at);
+    EXPECT_EQ(retrieved.updated_at, original.updated_at);
+
+    cleanupTestData();
+}
+
+// Test updating a reservation - Non-existent ID should fail
+TEST(PostgresDB, UpdateReservationNotFound) {
     ConfigManager config(".env");
     PostgresDB db(config);
 
@@ -182,13 +225,73 @@ TEST(PostgresDB, UpdateReservation) {
     EXPECT_FALSE(db.updateReservation(999999, res));
 }
 
-// Test deleting a reservation
-TEST(PostgresDB, DeleteReservation) {
+// Test updating a reservation - Existing ID should succeed
+TEST(PostgresDB, UpdateReservationExists) {
+    cleanupTestData();
+    ConfigManager config(".env");
+    PostgresDB db(config);
+
+    // Insert initial reservation
+    Reservation original = createBaseReservation();
+    original.room_number = 160;
+    int id = db.insertReservation(original);
+    ASSERT_NE(id, -1) << "Initial insertion should succeed";
+
+    // Update the reservation
+    Reservation updated = createBaseReservation();
+    updated.room_number = 160;
+    updated.guest_name = "UPDATED_GUEST";
+    updated.guest_email = "updated@example.com";
+    updated.price_per_night = 200.0;
+    updated.total_price = 1000.0;
+
+    EXPECT_TRUE(db.updateReservation(id, updated))
+        << "Update should succeed for existing ID";
+
+    // Verify the update by retrieving it
+    Reservation retrieved = db.getReservationById(id);
+    EXPECT_EQ(retrieved.guest_name, "UPDATED_GUEST");
+    EXPECT_EQ(retrieved.guest_email, "updated@example.com");
+    EXPECT_EQ(retrieved.price_per_night, 200.0);
+
+    cleanupTestData();
+}
+
+// Test deleting a reservation - Non-existent ID should fail
+TEST(PostgresDB, DeleteReservationNotFound) {
     ConfigManager config(".env");
     PostgresDB db(config);
 
     // Try to delete non-existent ID - should return false
     EXPECT_FALSE(db.deleteReservation(999999));
+}
+
+// Test deleting a reservation - Existing ID should succeed
+TEST(PostgresDB, DeleteReservationExists) {
+    cleanupTestData();
+    ConfigManager config(".env");
+    PostgresDB db(config);
+
+    // Insert a reservation
+    Reservation res = createBaseReservation();
+    res.room_number = 170;
+    int id = db.insertReservation(res);
+    ASSERT_NE(id, -1) << "Insertion should succeed";
+
+    // Verify it exists by retrieving it
+    Reservation retrieved = db.getReservationById(id);
+    EXPECT_EQ(retrieved.room_number, 170);
+
+    // Delete it
+    EXPECT_TRUE(db.deleteReservation(id))
+        << "Deletion should succeed for existing ID";
+
+    // Verify it's deleted by trying to retrieve it
+    EXPECT_THROW(
+        { Reservation deleted = db.getReservationById(id); },
+        std::runtime_error);
+
+    cleanupTestData();
 }
 
 // Test concurrent inserts
@@ -198,7 +301,7 @@ TEST(PostgresDB, ConcurrentInserts) {
     PostgresDB db(config);
 
     std::vector<std::thread> threads;
-    std::vector<bool> results(5);
+    std::vector<int> results(5);
 
     for (int i = 0; i < 5; i++) {
         threads.emplace_back([&results, i]() {
@@ -216,9 +319,9 @@ TEST(PostgresDB, ConcurrentInserts) {
         t.join();
     }
 
-    // All 5 inserts should succeed (different rooms)
+    // All 5 inserts should succeed (different rooms) - IDs should not be -1
     for (int i = 0; i < 5; i++) {
-        EXPECT_TRUE(results[i]) << "Concurrent insert " << i << " failed";
+        EXPECT_NE(results[i], -1) << "Concurrent insert " << i << " failed";
     }
 
     cleanupTestData();
@@ -236,7 +339,8 @@ TEST(PostgresDB, DataPersistence) {
         Reservation res = createBaseReservation();
         res.room_number = 130;
 
-        EXPECT_TRUE(db.insertReservation(res));
+        int id = db.insertReservation(res);
+        EXPECT_NE(id, -1) << "Insertion should succeed";
     }  // Connection closes
 
     // Open new connection and verify it's still connected
