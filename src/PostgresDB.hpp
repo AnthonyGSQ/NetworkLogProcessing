@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "ConnectionPool.hpp"
 #include "Logger.hpp"
 
 // Forward declaration to avoid circular includes
@@ -62,17 +63,29 @@ class PostgresDB {
      * Insert a new reservation
      *
      * param: reservation - Reservation object to insert
-     * return: true if successful, false otherwise
+     * return: ID of inserted reservation if successful, -1 otherwise
      * throws: exception with descriptive message if connection lost
      *
      * What happens inside:
      * 1. Start transaction
      * 2. Insert all fields from reservation into reservations table
      * 3. Commit transaction (all or nothing)
-     * 4. Return success/failure
+     * 4. Return the assigned ID (or -1 on failure)
      *
      */
-    bool insertReservation(const Reservation& res);
+    int insertReservation(const Reservation& res);
+
+    /**
+     * Insert a new reservation using a connection from the pool
+     *
+     * param: conn - Reference to a connection from ConnectionPool
+     * param: reservation - Reservation object to insert
+     * return: ID of inserted reservation if successful, -1 otherwise
+     *
+     * Used by: Worker threads (ClientConnection) that acquire connections from pool
+     * Allows multiple threads to insert concurrently without blocking
+     */
+    int insertReservation(pqxx::connection& conn, const Reservation& res);
 
     /**
      * Retrieve a reservation by ID
@@ -100,12 +113,30 @@ class PostgresDB {
      */
     bool deleteReservation(int id);
 
+    /**
+     * Get access to connection pool
+     * 
+     * Used by worker threads (ClientConnection) to acquire DB connections
+     * return: pointer to ConnectionPool maintained by this PostgresDB
+     */
+    ConnectionPool* getConnectionPool() const;
+
    private:
     /**
      * The actual database connection object (provided by libpqxx)
      * pqxx::connection comes from #include <pqxx/pqxx.h>
      */
     pqxx::connection conn;
+
+    /**
+     * Connection pool for multi-threaded access
+     * 
+     * - Maintains 4 database connections
+     * - Worker threads acquire/release connections via this pool
+     * - Thread-safe: protected by mutex and condition_variable
+     * - Shared resource: all ClientConnection threads use this same pool
+     */
+    mutable ConnectionPool pool;
 
     /**
      * Build PostgreSQL connection string from ConfigManager

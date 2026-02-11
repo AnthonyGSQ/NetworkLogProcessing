@@ -6,22 +6,26 @@
 #include "config/ConfigManager.hpp"
 
 PostgresDB::PostgresDB(const ConfigManager& config)
-    : conn(buildConnectionString(config)) {
+    : conn(buildConnectionString(config)), 
+      pool(buildConnectionString(config), 4) {
     /*
      * RAII in action:
      * - Constructor parameter: ConfigManager with validated credentials
-     * - Member initializer: conn(buildConnectionString(config))
-     *   This OPENS the connection immediately
-     * - If connection fails, exception thrown before object is fully
-     * constructed
+     * - Member initializer 1: conn(buildConnectionString(config))
+     *   This OPENS the primary connection immediately
+     * - Member initializer 2: pool(buildConnectionString(config), 4)
+     *   This OPENS 4 additional connections in the ConnectionPool
+     *   Workers will acquire/release these connections via getConnectionPool()
+     * - If connection fails, exception thrown before object is fully constructed
      * - Caller sees the exception, knows something is wrong
      */
-
+    
     if (!conn.is_open()) {
         throw std::runtime_error("[PostgresDB] Failed to connect to database");
     }
 
     std::cout << "[PostgresDB] Connected successfully" << std::endl;
+    std::cout << "[PostgresDB] Connection pool initialized with 4 connections" << std::endl;
 }
 
 PostgresDB::~PostgresDB() {
@@ -36,6 +40,23 @@ PostgresDB::~PostgresDB() {
         std::cout << "[PostgresDB] Closing connection" << std::endl;
     }
     // conn destructor runs here, closes connection
+}
+
+ConnectionPool* PostgresDB::getConnectionPool() const {
+    /*
+     * Provides access to the connection pool for worker threads
+     * 
+     * Usage in ClientConnection:
+     *   auto conn = db->getConnectionPool()->acquire();
+     *   // ... use connection ...
+     *   db->getConnectionPool()->release(std::move(conn));
+     * 
+     * Why const_cast needed on pool?
+     * - pool is mutable member (marked with mutable keyword)
+     * - Allows returning non-const pointer from const method
+     * - Necessary because acquire/release modify internal state
+     */
+    return const_cast<ConnectionPool*>(&pool);
 }
 
 std::string PostgresDB::buildConnectionString(const ConfigManager& config) {
@@ -64,13 +85,13 @@ std::string PostgresDB::buildConnectionString(const ConfigManager& config) {
         << " dbname=" << config.get("DB_NAME")
         << " user=" << config.get("DB_USER")
         << " password=" << config.get("DB_PASSWORD");
-
+    
     return oss.str();
 }
 
 bool PostgresDB::isConnected() const { return conn.is_open(); }
 
-bool PostgresDB::insertReservation(const Reservation& res) {
+int PostgresDB::insertReservation(const Reservation& res) {
     /*
      * Big picture: Take a Reservation C++ object, insert it into PostgreSQL
      *
@@ -79,14 +100,14 @@ bool PostgresDB::insertReservation(const Reservation& res) {
      * 2. Start transaction (all-or-nothing)
      * 3. Execute INSERT SQL with parameters
      * 4. Commit transaction
-     * 5. Return success/failure
+     * 5. Return the assigned ID (or -1 on failure)
      */
 
     try {
         // Step 1: Sanity check
         if (!conn.is_open()) {
             std::cerr << "[PostgresDB] ERROR: Connection lost" << std::endl;
-            return false;
+            return -1;
         }
 
         /*
@@ -127,6 +148,7 @@ bool PostgresDB::insertReservation(const Reservation& res) {
          */
 
         // The INSERT statement with $1, $2, etc. placeholders
+        // RETURNING id allows us to get the assigned ID
         std::string insertQuery = R"(
             INSERT INTO reservations (
                 guest_name, guest_email, guest_phone,
@@ -143,6 +165,7 @@ bool PostgresDB::insertReservation(const Reservation& res) {
                 $14, $15,
                 $16, $17
             )
+            RETURNING id
         )";
 
         /*
@@ -171,7 +194,7 @@ bool PostgresDB::insertReservation(const Reservation& res) {
         p.append(res.special_requests);
         p.append(res.created_at);
         p.append(res.updated_at);
-        txn.exec(insertQuery, p);
+        auto result = txn.exec(insertQuery, p);
 
         // Step 4: Commit the transaction
         txn.commit();
@@ -181,23 +204,100 @@ bool PostgresDB::insertReservation(const Reservation& res) {
          * - If commit fails, all changes are rolled back automatically
          */
 
+        // Extract the returned ID
+        int assignedId = result[0][0].as<int>();
         std::cout << "[PostgresDB] Reservation inserted successfully for: "
-                  << res.guest_name << std::endl;
+                  << res.guest_name << " with ID: " << assignedId << std::endl;
 
-        return true;
+        return assignedId;
 
     } catch (const std::exception& e) {
         /*
          * If ANY step above throws:
          * - Transaction is automatically rolled back (no partial inserts)
          * - Exception caught here
-         * - Return false to caller
+         * - Return -1 to caller
          *
          * This is the safety of RAII + transactions
          */
         std::cerr << "[PostgresDB] Error inserting reservation: " << e.what()
                   << std::endl;
-        return false;
+        return -1;
+    }
+}
+
+int PostgresDB::insertReservation(pqxx::connection& conn, const Reservation& res) {
+    /*
+     * Overloaded version for pool connections
+     * 
+     * Same logic as insertReservation(const Reservation& res)
+     * but uses the provided connection instead of this->conn
+     * 
+     * This allows multiple threads to execute concurrently:
+     * - Thread 1 acquires conn1, inserts data
+     * - Thread 2 acquires conn2, inserts data simultaneously
+     * - No blocking: each thread has its own connection
+     */
+
+    try {
+        if (!conn.is_open()) {
+            std::cerr << "[PostgresDB] ERROR: Connection lost" << std::endl;
+            return -1;
+        }
+
+        pqxx::work txn(conn);
+
+        std::string insertQuery = R"(
+            INSERT INTO reservations (
+                guest_name, guest_email, guest_phone,
+                room_number, room_type, number_of_guests,
+                check_in_date, check_out_date, number_of_nights,
+                price_per_night, total_price, payment_method, paid,
+                reservation_status, special_requests,
+                created_at, updated_at
+            ) VALUES (
+                $1, $2, $3,
+                $4, $5, $6,
+                $7, $8, $9,
+                $10, $11, $12, $13,
+                $14, $15,
+                $16, $17
+            )
+            RETURNING id
+        )";
+
+        pqxx::params p;
+        p.append(res.guest_name);
+        p.append(res.guest_email);
+        p.append(res.guest_phone);
+        p.append(res.room_number);
+        p.append(res.room_type);
+        p.append(res.number_of_guests);
+        p.append(res.check_in_date);
+        p.append(res.check_out_date);
+        p.append(res.number_of_nights);
+        p.append(res.price_per_night);
+        p.append(res.total_price);
+        p.append(res.payment_method);
+        p.append(res.paid);
+        p.append(res.reservation_status);
+        p.append(res.special_requests);
+        p.append(res.created_at);
+        p.append(res.updated_at);
+        auto result = txn.exec(insertQuery, p);
+
+        txn.commit();
+
+        int assignedId = result[0][0].as<int>();
+        std::cout << "[PostgresDB] [Pool] Reservation inserted successfully for: "
+                  << res.guest_name << " with ID: " << assignedId << std::endl;
+
+        return assignedId;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[PostgresDB] [Pool] Error inserting reservation: " << e.what()
+                  << std::endl;
+        return -1;
     }
 }
 
