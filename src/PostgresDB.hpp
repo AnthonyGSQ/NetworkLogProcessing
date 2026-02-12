@@ -82,8 +82,8 @@ class PostgresDB {
      * param: reservation - Reservation object to insert
      * return: ID of inserted reservation if successful, -1 otherwise
      *
-     * Used by: Worker threads (ClientConnection) that acquire connections from pool
-     * Allows multiple threads to insert concurrently without blocking
+     * Used by: Worker threads (ClientConnection) that acquire connections from
+     * pool Allows multiple threads to insert concurrently without blocking
      */
     int insertReservation(pqxx::connection& conn, const Reservation& res);
 
@@ -115,7 +115,7 @@ class PostgresDB {
 
     /**
      * Get access to connection pool
-     * 
+     *
      * Used by worker threads (ClientConnection) to acquire DB connections
      * return: pointer to ConnectionPool maintained by this PostgresDB
      */
@@ -130,7 +130,7 @@ class PostgresDB {
 
     /**
      * Connection pool for multi-threaded access
-     * 
+     *
      * - Maintains 4 database connections
      * - Worker threads acquire/release connections via this pool
      * - Thread-safe: protected by mutex and condition_variable

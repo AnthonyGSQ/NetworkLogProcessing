@@ -6,7 +6,7 @@
 #include "config/ConfigManager.hpp"
 
 PostgresDB::PostgresDB(const ConfigManager& config)
-    : conn(buildConnectionString(config)), 
+    : conn(buildConnectionString(config)),
       pool(buildConnectionString(config), 4) {
     /*
      * RAII in action:
@@ -16,16 +16,18 @@ PostgresDB::PostgresDB(const ConfigManager& config)
      * - Member initializer 2: pool(buildConnectionString(config), 4)
      *   This OPENS 4 additional connections in the ConnectionPool
      *   Workers will acquire/release these connections via getConnectionPool()
-     * - If connection fails, exception thrown before object is fully constructed
+     * - If connection fails, exception thrown before object is fully
+     * constructed
      * - Caller sees the exception, knows something is wrong
      */
-    
+
     if (!conn.is_open()) {
         throw std::runtime_error("[PostgresDB] Failed to connect to database");
     }
 
     std::cout << "[PostgresDB] Connected successfully" << std::endl;
-    std::cout << "[PostgresDB] Connection pool initialized with 4 connections" << std::endl;
+    std::cout << "[PostgresDB] Connection pool initialized with 4 connections"
+              << std::endl;
 }
 
 PostgresDB::~PostgresDB() {
@@ -45,12 +47,12 @@ PostgresDB::~PostgresDB() {
 ConnectionPool* PostgresDB::getConnectionPool() const {
     /*
      * Provides access to the connection pool for worker threads
-     * 
+     *
      * Usage in ClientConnection:
      *   auto conn = db->getConnectionPool()->acquire();
      *   // ... use connection ...
      *   db->getConnectionPool()->release(std::move(conn));
-     * 
+     *
      * Why const_cast needed on pool?
      * - pool is mutable member (marked with mutable keyword)
      * - Allows returning non-const pointer from const method
@@ -85,7 +87,7 @@ std::string PostgresDB::buildConnectionString(const ConfigManager& config) {
         << " dbname=" << config.get("DB_NAME")
         << " user=" << config.get("DB_USER")
         << " password=" << config.get("DB_PASSWORD");
-    
+
     return oss.str();
 }
 
@@ -226,13 +228,14 @@ int PostgresDB::insertReservation(const Reservation& res) {
     }
 }
 
-int PostgresDB::insertReservation(pqxx::connection& conn, const Reservation& res) {
+int PostgresDB::insertReservation(pqxx::connection& conn,
+                                  const Reservation& res) {
     /*
      * Overloaded version for pool connections
-     * 
+     *
      * Same logic as insertReservation(const Reservation& res)
      * but uses the provided connection instead of this->conn
-     * 
+     *
      * This allows multiple threads to execute concurrently:
      * - Thread 1 acquires conn1, inserts data
      * - Thread 2 acquires conn2, inserts data simultaneously
@@ -289,14 +292,15 @@ int PostgresDB::insertReservation(pqxx::connection& conn, const Reservation& res
         txn.commit();
 
         int assignedId = result[0][0].as<int>();
-        std::cout << "[PostgresDB] [Pool] Reservation inserted successfully for: "
-                  << res.guest_name << " with ID: " << assignedId << std::endl;
+        std::cout
+            << "[PostgresDB] [Pool] Reservation inserted successfully for: "
+            << res.guest_name << " with ID: " << assignedId << std::endl;
 
         return assignedId;
 
     } catch (const std::exception& e) {
-        std::cerr << "[PostgresDB] [Pool] Error inserting reservation: " << e.what()
-                  << std::endl;
+        std::cerr << "[PostgresDB] [Pool] Error inserting reservation: "
+                  << e.what() << std::endl;
         return -1;
     }
 }
