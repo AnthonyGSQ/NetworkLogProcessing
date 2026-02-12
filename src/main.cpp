@@ -1,15 +1,12 @@
 #include <iostream>
-
-#include "HttpServer.hpp"
-#include "config/ConfigManager.hpp"
+#include "Application.hpp"
 
 int main() {
     try {
-        ConfigManager config(".env");
-        HttpServer server(config, true, 8080);
-        server.start();
+        Application app(".env");
+        app.run();  // ← AQUÍ!
     } catch (const std::exception& e) {
-        std::cerr << "[main] Error: " << e.what() << "\n";
+        std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
     return 0;
