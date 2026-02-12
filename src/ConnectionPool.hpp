@@ -1,22 +1,22 @@
 #ifndef CONNECTIONPOOL_HPP
 #define CONNECTIONPOOL_HPP
 
-#include <pqxx/pqxx>
-#include <mutex>
-#include <queue>
-#include <memory>
 #include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <pqxx/pqxx>
+#include <queue>
 
 class ConnectionPool {
-    public:
+   public:
     ConnectionPool(const std::string& connInfo, size_t size) {
-        for(size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < size; i++) {
             pool.push(std::make_unique<pqxx::connection>(connInfo));
         }
     }
     std::unique_ptr<pqxx::connection> acquire() {
         std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this] {return !pool.empty();});
+        cv.wait(lock, [this] { return !pool.empty(); });
 
         auto conn = std::move(pool.front());
         pool.pop();
@@ -28,11 +28,10 @@ class ConnectionPool {
         cv.notify_one();
     }
 
-    private:
+   private:
     std::queue<std::unique_ptr<pqxx::connection>> pool;
-    std:: mutex mtx;
+    std::mutex mtx;
     std::condition_variable cv;
 };
-
 
 #endif
