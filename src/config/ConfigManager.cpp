@@ -5,21 +5,10 @@
 
 ConfigManager::ConfigManager(const std::string& recEnvFilePath)
     : envFilePath(recEnvFilePath) {
-    /*
-     * Constructor flow:
-     * 1. Load the file (parse all key=value pairs)
-     * 2. Validate that required fields exist
-     * 3. If anything fails, throw exception BEFORE returning
-     */
-
     std::cout << "[ConfigManager] Loading configuration from: " << envFilePath
               << std::endl;
-
     try {
         loadFromFile(envFilePath);
-        validateRequired();
-        std::cout << "[ConfigManager] Configuration loaded successfully"
-                  << std::endl;
     } catch (const std::exception& e) {
         // Re-throw with context
         throw std::runtime_error(

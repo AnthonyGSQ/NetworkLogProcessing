@@ -41,7 +41,17 @@ class ConfigManager {
      *
      * Useful for optional settings
      */
+
     bool has(const std::string& key) const;
+
+    /**
+     * Validate that all required fields exist
+     *
+     * If any required field is missing, throws exception with clear message.
+     * This fails EARLY - at startup time, not at runtime when you try to
+     * connect.
+     */
+    void validateRequired();
 
    private:
     const std::string& envFilePath;
@@ -65,15 +75,6 @@ class ConfigManager {
      * Ignores: empty lines, comments (lines starting with #)
      */
     void parseLine(const std::string& line);
-
-    /**
-     * Validate that all required fields exist
-     *
-     * If any required field is missing, throws exception with clear message.
-     * This fails EARLY - at startup time, not at runtime when you try to
-     * connect.
-     */
-    void validateRequired();
 };
 
 #endif  // CONFIG_MANAGER_HPP
