@@ -1,33 +1,28 @@
 #include "HttpServer.hpp"
 
 #include <iostream>
+#include <stdexcept>
 #include <thread>
 
 #include "ClientConnection.hpp"
 
-HttpServer* HttpServer::instance = nullptr;
-std::mutex HttpServer::instance_mtx;
-HttpServer::HttpServer(const ConfigManager& config, bool ipv4, int port)
-    : ipv4(ipv4), port(port), acceptor(ioc) {
-    try {
-        database = std::make_unique<PostgresDB>(config);
-        std::cout << "[HttpServer] Database connection initialized\n";
-    } catch (const std::exception& e) {
-        std::cerr << "[HttpServer] Failed to initialize database: " << e.what()
-                  << "\n";
-        throw;
-    }
-    this->setupSignalHandlers();
+HttpServer::HttpServer(PostgresDB* db)
+    : ipv4(true), port(8080), database(db), acceptor(nullptr) {
+    // TODO: Get port from config if available
+    // port = config.getInt("HTTP_PORT");
 }
 
 HttpServer::~HttpServer() { stopServer(); }
 
 void HttpServer::start() {
-    if (!this->startAcceptor()) {
-        std::cerr << "Failed to start acceptor, cannot proceed\n";
-        return;
+    if (!startAcceptor()) {
+        throw std::runtime_error("Failed to start HTTP acceptor");
     }
-    this->acceptConnections();
+    acceptConnections();
+}
+
+void HttpServer::stop() {
+    stopServer();
 }
 
 bool HttpServer::startAcceptor() {
@@ -39,17 +34,20 @@ bool HttpServer::startAcceptor() {
             return false;
         }
 
+        // Create acceptor now (deferred from constructor)
+        acceptor = std::make_unique<tcp::acceptor>(ioc);
+
         if (ipv4) {
-            acceptor.open(tcp::v4());
-            acceptor.bind(tcp::endpoint(tcp::v4(), port));
+            acceptor->open(tcp::v4());
+            acceptor->bind(tcp::endpoint(tcp::v4(), port));
         } else {
-            acceptor.open(tcp::v6());
-            acceptor.bind(tcp::endpoint(tcp::v6(), port));
+            acceptor->open(tcp::v6());
+            acceptor->bind(tcp::endpoint(tcp::v6(), port));
         }
         // TODO: a little risky if there is old http requests in the network
         // buffer
-        acceptor.set_option(tcp::acceptor::reuse_address(true));
-        acceptor.listen(asio::socket_base::max_listen_connections);
+        acceptor->set_option(tcp::acceptor::reuse_address(true));
+        acceptor->listen(asio::socket_base::max_listen_connections);
 
         std::cout << "Server listening on port " << port << "\n";
         return true;
@@ -63,23 +61,19 @@ void HttpServer::acceptConnections() {
     while (!this->shouldStop) {
         try {
             // Check if acceptor is open before attempting to accept
-            if (!acceptor.is_open()) {
+            if (!acceptor || !acceptor->is_open()) {
                 std::cerr << "HttpServer::acceptConnections(): acceptor is not "
                              "open\n";
                 break;
             }
 
             tcp::socket currentSocket{ioc};
-            acceptor.accept(currentSocket);
+            acceptor->accept(currentSocket);
 
-            // Creamos una instancia de clientConnection (que hereda de Task)
-            // El constructor recibe el socket, db pointer y lo mueve
-            // internamente
-            clientConnection client(std::move(currentSocket), database.get());
-
-            // Encolamos la tarea directamente
-            // threadPool.enqueueTask() es template y acepta cualquier derivada
-            // de Task
+            // we create the clientconnection with his respective socket and database
+            clientConnection client(std::move(currentSocket), database);
+            // now we put the task clientConnection in the queue to be consumed
+            // by a thread
             threadPool.enqueueTask(std::move(client));
 
         } catch (const std::exception& e) {
@@ -101,8 +95,8 @@ void HttpServer::stopServer() {
     }
     this->cond_var.notify_all();
     try {
-        if (acceptor.is_open()) {
-            acceptor.close();
+        if (acceptor && acceptor->is_open()) {
+            acceptor->close();
         }
     } catch (const std::exception& e) {
         std::cerr << "HttpServer::stopServer(): Warning! acceptor is already "
@@ -113,27 +107,3 @@ void HttpServer::stopServer() {
 }
 
 bool HttpServer::isRunning() const { return !shouldStop; }
-
-void HttpServer::handleSignal(int signal) {
-    std::unique_lock<std::mutex> lock(instance_mtx);
-    if (!instance) {
-        return;
-    }
-    if (signal == SIGTERM || signal == SIGINT || signal == SIGTSTP) {
-        std::cout << "\n[SIGNAL] Received signal " << signal
-                  << ", initiating graceful shutdown...\n";
-        instance->stopServer();
-    }
-}
-
-void HttpServer::setupSignalHandlers() {
-    {
-        std::unique_lock<std::mutex> lock(instance_mtx);
-        // set singleton
-        instance = this;
-    }
-    signal(SIGINT, HttpServer::handleSignal);   // Ctrl+C
-    signal(SIGTERM, HttpServer::handleSignal);  // kill <pid>
-    signal(SIGTSTP, HttpServer::handleSignal);  // Ctrl+Z
-    std::cout << "Signal handlers registered (SIGTERM, SIGINT, SIGTSTP)\n";
-}

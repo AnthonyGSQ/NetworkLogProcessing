@@ -24,7 +24,7 @@ using tcp = asio::ip::tcp;
 // and sends appropriate HTTP response.
 class clientConnection : public Task {
    public:
-    explicit clientConnection(tcp::socket socket, PostgresDB* db);
+    explicit clientConnection(tcp::socket socket, PostgresDB* database = nullptr);
 
     // Implements Task interface. Called by worker thread.
     // Reads HTTP request, parses and validates JSON, sends response.

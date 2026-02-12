@@ -3,8 +3,8 @@
 #include <iostream>
 #include <memory>
 
-clientConnection::clientConnection(tcp::socket socket, PostgresDB* db)
-    : db(db), clientSocket(std::move(socket)) {}
+clientConnection::clientConnection(tcp::socket socket, PostgresDB* database)
+    : db(database), clientSocket(std::move(socket)) {}
 
 void clientConnection::execute() {
     try {
@@ -33,13 +33,14 @@ void clientConnection::processRequest(
         if (db != nullptr) {
             /*
              * Acquire a connection from the pool
-             * This is thread-safe: acquire() blocks until a connection is available
-             * 
+             * This is thread-safe: acquire() blocks until a connection is
+             * available
+             *
              * The connection is returned as unique_ptr, which ensures
              * automatic cleanup when conn goes out of scope (via RAII)
              */
             auto conn = db->getConnectionPool()->acquire();
-            
+
             try {
                 /*
                  * Insert using the pool connection instead of db->conn
@@ -49,7 +50,7 @@ void clientConnection::processRequest(
                  * - No blocking on db->conn
                  */
                 int reservationId = db->insertReservation(*conn, reservation);
-                
+
                 if (reservationId != -1) {
                     httpResponse.result(http::status::ok);
                     httpResponse.body() =
@@ -60,22 +61,25 @@ void clientConnection::processRequest(
                               << reservationId << "\n";
                 } else {
                     httpResponse.result(http::status::internal_server_error);
-                    httpResponse.body() = "Failed to save reservation to database";
+                    httpResponse.body() =
+                        "Failed to save reservation to database";
                     std::cerr
                         << "[ClientConnection] Failed to insert reservation\n";
                 }
             } catch (const std::exception& e) {
                 httpResponse.result(http::status::bad_request);
                 httpResponse.body() = std::string("Error: ") + e.what();
-                std::cerr << "[ClientConnection] Exception: " << e.what() << "\n";
+                std::cerr << "[ClientConnection] Exception: " << e.what()
+                          << "\n";
             }
-            
+
             /*
              * Release connection back to pool
-             * 
-             * IMPORTANT: Release is called whether operation succeeded or failed
-             * This ensures the connection returns to the pool for other threads
-             * 
+             *
+             * IMPORTANT: Release is called whether operation succeeded or
+             * failed This ensures the connection returns to the pool for other
+             * threads
+             *
              * The unique_ptr is moved into release(), transferring ownership
              * back to the pool
              */
