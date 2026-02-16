@@ -103,8 +103,9 @@ TEST(PostgresDB, OverlappingReservationsRejected) {
 
     // Try to insert same room, same dates (should FAIL)
     Reservation res2 = createBaseReservation();
-    res2.room_number = 105;           // Same room
-    res2.guest_name = "TESTING_OWNER";  // Different guest, pero mismo room+dates
+    res2.room_number = 105;  // Same room
+    res2.guest_name =
+        "TESTING_OWNER";  // Different guest, pero mismo room+dates
     int id2 = db.insertReservation(res2);
     EXPECT_EQ(id2, -1) << "Overlapping reservations should be rejected";
 

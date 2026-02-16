@@ -5,39 +5,41 @@
 Application::Application(const std::string& configPath) {
     configManager = std::make_unique<ConfigManager>(configPath);
     database = std::make_unique<PostgresDB>(*configManager);
-    httpServer = std::make_unique<HttpServer>(database.get());
+    httpServer = std::make_unique<HttpServer>(database.get(), port);
     signalManager = std::make_unique<SignalManager>();
 }
 
-void Application::run() {
+int Application::run() {
     if (initializeConfigManager() < 0) {
         std::cerr << "Application::initializeConfigManager(): Error, couldn't "
                      "initialize config manager\n";
-        return;
+        return -1;
     }
     if (initializeDatabase() < 0) {
         std::cerr << "Application::initializeDatabase(): Error, couldn't "
                      "initialize database\n";
-        return;
+        return -2;
     }
     if (initializeHttpServer() < 0) {
         std::cerr << "Application::initializeHttpServer(): Error, couldn't "
                      "initialize HttpServer\n";
-        return;
+        return -3;
     }
     if (initializeSignalManager() < 0) {
         std::cerr << "Application::initializeSignalManager(): Error, couldn't "
                      "initialize signal manager\n";
-        return;
+        return -4;
     }
-    std::cout << "SignalManager, HttpServer, Database and ConfigManager ready!\n";
+    std::cout
+        << "SignalManager, HttpServer, Database and ConfigManager ready!\n";
     httpServer->start();
+    return 0;
 }
 
 int Application::initializeConfigManager() {
     configManager->validateRequired();
     std::cout << "[ConfigManager] Configuration loaded successfully"
-        << std::endl;
+              << std::endl;
     return 0;
 }
 
@@ -60,13 +62,9 @@ int Application::initializeHttpServer() {
 }
 
 int Application::initializeSignalManager() {
-    signalManager->setCallback([this]() {
-        this->stop();
-    });
+    signalManager->setCallback([this]() { this->stop(); });
     signalManager->setup();
     return 0;
 }
 
-void Application::stop() {
-    httpServer->stop();
-}
+void Application::stop() { httpServer->stop(); }

@@ -8,8 +8,8 @@
 #include <sstream>
 #include <thread>
 
-#include "../src/HTTP/HttpServer.hpp"
 #include "../src/DataBase/PostgresDB.hpp"
+#include "../src/HTTP/HttpServer.hpp"
 #include "../src/config/ConfigManager.hpp"
 #include "../src/config/SignalManager.hpp"
 
@@ -112,7 +112,7 @@ TEST(HttpServer, ConstructorIpv4) {
     system(cmd.c_str());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    //kill(getpid(), SIGINT);
+    // kill(getpid(), SIGINT);
     server.stop();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -126,7 +126,6 @@ TEST(HttpServer, ConstructorIpv6) {
     PostgresDB db(config);
     HttpServer server(&db, 8081);
     std::thread server_thread([&sync_point, &server]() {
-        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -169,12 +168,12 @@ TEST(HttpServer, PortAlreadyInUse) {
         config.validateRequired();
         PostgresDB db(config);
         HttpServer server(&db, 8083);
-        
+
         // Setup signal handling for this server
         SignalManager sigManager;
         sigManager.setCallback([&server]() { server.stop(); });
         sigManager.setup();
-        
+
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -196,12 +195,12 @@ TEST(HttpServer, PortAlreadyInUse) {
     config.validateRequired();
     PostgresDB db(config);
     HttpServer server2(&db, 8083);
-    
+
     // Setup signal handling for second server
     SignalManager sigManager2;
     sigManager2.setCallback([&server2]() { server2.stop(); });
     sigManager2.setup();
-    
+
     EXPECT_THROW(server2.start(), std::runtime_error);
     kill(getpid(), SIGINT);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -217,12 +216,12 @@ TEST(HttpServer, InvalidJsonRequest) {
         ConfigManager config(".env");
         PostgresDB db(config);
         HttpServer server(&db, 8085);
-        
+
         // Setup signal handling for this server
         SignalManager sigManager;
         sigManager.setCallback([&server]() { server.stop(); });
         sigManager.setup();
-        
+
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -248,12 +247,12 @@ TEST(HttpServer, MissingRequiredFields) {
         ConfigManager config(".env");
         PostgresDB db(config);
         HttpServer server(&db, 8086);
-        
+
         // Setup signal handling for this server
         SignalManager sigManager;
         sigManager.setCallback([&server]() { server.stop(); });
         sigManager.setup();
-        
+
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -282,12 +281,12 @@ TEST(HttpServer, ConcurrentValidRequests) {
         ConfigManager config(".env");
         PostgresDB db(config);
         HttpServer server(&db, 8087);
-        
+
         // Setup signal handling for this server
         SignalManager sigManager;
         sigManager.setCallback([&server]() { server.stop(); });
         sigManager.setup();
-        
+
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -328,12 +327,12 @@ TEST(HttpServer, ConcurrentMixedRequests) {
         ConfigManager config(".env");
         PostgresDB db(config);
         HttpServer server(&db, 8088);
-        
+
         // Setup signal handling for this server
         SignalManager sigManager;
         sigManager.setCallback([&server]() { server.stop(); });
         sigManager.setup();
-        
+
         sync_point.arrive_and_wait();
         server.start();
     });

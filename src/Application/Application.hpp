@@ -1,13 +1,14 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "../config/ConfigManager.hpp"
-#include "../HTTP/HttpServer.hpp"
 #include "../DataBase/PostgresDB.hpp"
+#include "../HTTP/HttpServer.hpp"
+#include "../config/ConfigManager.hpp"
 #include "../config/SignalManager.hpp"
 
 class Application {
    private:
+    int port;
     std::unique_ptr<SignalManager> signalManager;
     std::unique_ptr<HttpServer> httpServer;
     std::unique_ptr<PostgresDB> database;
@@ -18,9 +19,9 @@ class Application {
     int initializeConfigManager();
 
    public:
-    Application(const std::string& configPath);
+    Application(const std::string& configPath, int port = 8080);
     ~Application() = default;
-    void run();
+    int run();
     void stop();
 };
 

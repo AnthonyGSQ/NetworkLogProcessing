@@ -21,9 +21,7 @@ void HttpServer::start() {
     acceptConnections();
 }
 
-void HttpServer::stop() {
-    stopServer();
-}
+void HttpServer::stop() { stopServer(); }
 
 bool HttpServer::startAcceptor() {
     try {
@@ -71,7 +69,8 @@ void HttpServer::acceptConnections() {
             tcp::socket currentSocket{ioc};
             acceptor->accept(currentSocket);
 
-            // we create the clientconnection with his respective socket and database
+            // we create the clientconnection with his respective socket and
+            // database
             clientConnection client(std::move(currentSocket), database);
             // now we put the task clientConnection in the queue to be consumed
             // by a thread
