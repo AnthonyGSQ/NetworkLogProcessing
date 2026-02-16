@@ -27,7 +27,7 @@ void clientConnection::processRequest(
     http::response<http::string_body>& httpResponse) {
     try {
         // Parse JSON from request body
-        Reservation reservation = log.parseJson(httpRequest.body());
+        Reservation reservation = jsonHandler.parseJson(httpRequest.body());
 
         // Insert into database if db connection is available
         if (db != nullptr) {

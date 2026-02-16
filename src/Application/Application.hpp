@@ -1,10 +1,10 @@
 #ifndef APPLICATION_HPP
 #define APPLICATION_HPP
 
-#include "./config/ConfigManager.hpp"
-#include "HttpServer.hpp"
-#include "PostgresDB.hpp"
-#include "SignalManager.hpp"
+#include "../config/ConfigManager.hpp"
+#include "../HTTP/HttpServer.hpp"
+#include "../DataBase/PostgresDB.hpp"
+#include "../config/SignalManager.hpp"
 
 class Application {
    private:

@@ -6,10 +6,10 @@
 
 #include "ClientConnection.hpp"
 
-HttpServer::HttpServer(PostgresDB* db)
-    : ipv4(true), port(8080), database(db), acceptor(nullptr) {
-    // TODO: Get port from config if available
-    // port = config.getInt("HTTP_PORT");
+HttpServer::HttpServer(PostgresDB* db, int port_param)
+    : ipv4(true), port(port_param), database(db), acceptor(nullptr) {
+    // TODO: Get port from config if available when port_param is 0
+    // if (port == 0) port = config.getInt("HTTP_PORT", 8080);
 }
 
 HttpServer::~HttpServer() { stopServer(); }
@@ -39,14 +39,15 @@ bool HttpServer::startAcceptor() {
 
         if (ipv4) {
             acceptor->open(tcp::v4());
+            // Set reuse_address BEFORE bind to allow rapid port reuse
+            acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v4(), port));
         } else {
             acceptor->open(tcp::v6());
+            // Set reuse_address BEFORE bind to allow rapid port reuse
+            acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v6(), port));
         }
-        // TODO: a little risky if there is old http requests in the network
-        // buffer
-        acceptor->set_option(tcp::acceptor::reuse_address(true));
         acceptor->listen(asio::socket_base::max_listen_connections);
 
         std::cout << "Server listening on port " << port << "\n";

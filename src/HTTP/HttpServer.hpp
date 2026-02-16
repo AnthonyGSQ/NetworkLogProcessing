@@ -19,9 +19,9 @@
 #include <memory>
 #include <thread>
 
-#include "PostgresDB.hpp"
-#include "ThreadPool.hpp"
-#include "config/ConfigManager.hpp"
+#include "../DataBase/PostgresDB.hpp"
+#include "../Utils/ThreadPool.hpp"
+#include "../config/ConfigManager.hpp"
 
 // shutdown (thread-safe) librarys
 #include <atomic>
@@ -39,8 +39,9 @@ using tcp = asio::ip::tcp;
 // SIGTERM, SIGTSTP) or through destructor cleanup.
 class HttpServer {
    public:
-    // Constructor: initializes server with config and database connection
-    HttpServer(PostgresDB* db);
+    // Constructor: initializes server with database connection
+    // port: 0 = use default (8080), or specify custom port for testing
+    HttpServer(PostgresDB* db, int port = 8080);
     // Destructor: triggers graceful shutdown sequence
     ~HttpServer();
     // Starts the server: opens acceptor and accepts connections (blocking)

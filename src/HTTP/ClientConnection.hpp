@@ -8,10 +8,10 @@
 // Network, sockets, I/O
 #include <boost/asio.hpp>
 
-#include "Logger.hpp"
-#include "PostgresDB.hpp"
+#include "JsonHandler.hpp"
+#include "../DataBase/PostgresDB.hpp"
 // Task interface
-#include "TaskInterface.hpp"
+#include "../Utils/TaskInterface.hpp"
 
 // alias
 namespace beast = boost::beast;
@@ -31,7 +31,7 @@ class clientConnection : public Task {
     void execute() override;
 
    private:
-    Logger log;
+    JsonHandler jsonHandler;
     PostgresDB* db;
     tcp::socket clientSocket;
     beast::flat_buffer socketBuffer;

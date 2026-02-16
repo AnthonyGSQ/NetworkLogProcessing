@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "ConnectionPool.hpp"
-#include "Logger.hpp"
+#include "../Utils/ConnectionPool.hpp"
+#include "../HTTP/JsonHandler.hpp"
 
 // Forward declaration to avoid circular includes
 class ConfigManager;

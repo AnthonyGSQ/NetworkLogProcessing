@@ -1,5 +1,5 @@
-#ifndef LOGGER_HPP
-#define LOGGER_HPP
+#ifndef JSONHANDLER_HPP
+#define JSONHANDLER_HPP
 
 #include <boost/json.hpp>
 #include <stdexcept>
@@ -33,15 +33,13 @@ struct Reservation {
 };
 
 // this class receives the json and then, parse it
-class Logger {
+class JsonHandler {
    public:
-    Logger() = default;
+    JsonHandler() = default;
     // parse the json and returns a Reservation object
     Reservation parseJson(const std::string& jsonFile);
     // this function validates that the current json have all the reservation
     // information, if thats not the case, returns false
-    // TODO: make this function able to send a message to the html/css so the
-    // user can se what he needs to add to the reservation
     bool validateJsonFormat(const Reservation& reservation);
 
    private:

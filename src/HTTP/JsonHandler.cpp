@@ -1,8 +1,8 @@
-#include "Logger.hpp"
+#include "JsonHandler.hpp"
 
 #include <iostream>
 
-Reservation Logger::parseJson(const std::string& jsonFile) {
+Reservation JsonHandler::parseJson(const std::string& jsonFile) {
     Reservation currentReservation;
     // TODO: si el usuario manda un json valido sin esta info, cae en un catch
     // no muy informativo
@@ -72,7 +72,7 @@ Reservation Logger::parseJson(const std::string& jsonFile) {
     return currentReservation;
 };
 
-bool Logger::validateJsonFormat(const Reservation& reservation) {
+bool JsonHandler::validateJsonFormat(const Reservation& reservation) {
     // Validar datos del huésped
     if (reservation.guest_name.empty()) {
         std::cerr << "guest_name cannot be empty\n";

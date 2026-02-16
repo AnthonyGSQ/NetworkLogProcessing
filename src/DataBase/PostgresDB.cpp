@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "config/ConfigManager.hpp"
+#include "../config/ConfigManager.hpp"
 
 PostgresDB::PostgresDB(const ConfigManager& config)
     : conn(buildConnectionString(config)),
