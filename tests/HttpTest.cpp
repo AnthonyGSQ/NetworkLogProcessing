@@ -8,9 +8,10 @@
 #include <sstream>
 #include <thread>
 
-#include "../src/HttpServer.hpp"
-#include "../src/PostgresDB.hpp"
+#include "../src/HTTP/HttpServer.hpp"
+#include "../src/DataBase/PostgresDB.hpp"
 #include "../src/config/ConfigManager.hpp"
+#include "../src/config/SignalManager.hpp"
 
 // Helper function to delete test data from database
 static void cleanupTestData(const std::string& guestNamePattern) {
@@ -86,10 +87,14 @@ static std::string getInvalidJson(int variant = 0) {
 TEST(HttpServer, ConstructorIpv4) {
     std::barrier sync_point(2);
     std::string testGuest = "IPv4Guest";
-
-    std::thread server_thread([&sync_point]() {
-        ConfigManager config(".env");
-        HttpServer server(config, true, 18080);
+    ConfigManager config(".env");
+    PostgresDB db(config);
+    HttpServer server(&db, 8080);
+    // Setup signal handling for this server
+    SignalManager sigManager;
+    sigManager.setCallback([&server]() { server.stop(); });
+    sigManager.setup();
+    std::thread server_thread([&sync_point, &server]() {
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -101,13 +106,14 @@ TEST(HttpServer, ConstructorIpv4) {
     // Send valid reservation
     std::string json = getValidJson(0);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:18080/ -H 'Content-Type: "
+        "timeout 2 curl -s -X POST http://localhost:8080/ -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    kill(getpid(), SIGINT);
+    //kill(getpid(), SIGINT);
+    server.stop();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Cleanup
@@ -116,21 +122,25 @@ TEST(HttpServer, ConstructorIpv4) {
 
 TEST(HttpServer, ConstructorIpv6) {
     std::barrier sync_point(2);
-
-    std::thread server_thread([&sync_point]() {
-        ConfigManager config(".env");
-        HttpServer server(config, false, 18081);
+    ConfigManager config(".env");
+    PostgresDB db(config);
+    HttpServer server(&db, 8081);
+    std::thread server_thread([&sync_point, &server]() {
+        
         sync_point.arrive_and_wait();
         server.start();
     });
     server_thread.detach();
-
+    // Setup signal handling for this server
+    SignalManager sigManager;
+    sigManager.setCallback([&server]() { server.stop(); });
+    sigManager.setup();
     sync_point.arrive_and_wait();
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     std::string json = getValidJson(1);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://[::1]:18081/ -H 'Content-Type: "
+        "timeout 2 curl -s -X POST http://[::1]:8081/ -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -145,8 +155,10 @@ TEST(HttpServer, ConstructorIpv6) {
 
 TEST(HttpServer, NegativePort) {
     ConfigManager config(".env");
-    HttpServer server(config, true, -100);
-    server.start();
+    config.validateRequired();
+    PostgresDB db(config);
+    HttpServer server(&db, -100);
+    EXPECT_THROW(server.start(), std::runtime_error);
 }
 
 TEST(HttpServer, PortAlreadyInUse) {
@@ -154,7 +166,15 @@ TEST(HttpServer, PortAlreadyInUse) {
 
     std::thread server1_thread([&sync_point]() {
         ConfigManager config(".env");
-        HttpServer server(config, true, 18090);
+        config.validateRequired();
+        PostgresDB db(config);
+        HttpServer server(&db, 8083);
+        
+        // Setup signal handling for this server
+        SignalManager sigManager;
+        sigManager.setCallback([&server]() { server.stop(); });
+        sigManager.setup();
+        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -165,7 +185,7 @@ TEST(HttpServer, PortAlreadyInUse) {
 
     std::string json = getValidJson(2);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:18090/ -H 'Content-Type: "
+        "timeout 2 curl -s -X POST http://localhost:8083/ -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -173,8 +193,16 @@ TEST(HttpServer, PortAlreadyInUse) {
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     ConfigManager config(".env");
-    HttpServer server2(config, true, 18090);
-    server2.start();
+    config.validateRequired();
+    PostgresDB db(config);
+    HttpServer server2(&db, 8083);
+    
+    // Setup signal handling for second server
+    SignalManager sigManager2;
+    sigManager2.setCallback([&server2]() { server2.stop(); });
+    sigManager2.setup();
+    
+    EXPECT_THROW(server2.start(), std::runtime_error);
     kill(getpid(), SIGINT);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -187,7 +215,14 @@ TEST(HttpServer, InvalidJsonRequest) {
 
     std::thread server_thread([&sync_point]() {
         ConfigManager config(".env");
-        HttpServer server(config, true, 18091);
+        PostgresDB db(config);
+        HttpServer server(&db, 8085);
+        
+        // Setup signal handling for this server
+        SignalManager sigManager;
+        sigManager.setCallback([&server]() { server.stop(); });
+        sigManager.setup();
+        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -198,7 +233,7 @@ TEST(HttpServer, InvalidJsonRequest) {
 
     // Send invalid JSON - malformed
     system(
-        "timeout 2 curl -s -X POST http://localhost:18091/ -H 'Content-Type: "
+        "timeout 2 curl -s -X POST http://localhost:8085/ -H 'Content-Type: "
         "application/json' -d '{invalid json}' > /dev/null 2>&1");
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -211,7 +246,14 @@ TEST(HttpServer, MissingRequiredFields) {
 
     std::thread server_thread([&sync_point]() {
         ConfigManager config(".env");
-        HttpServer server(config, true, 18093);
+        PostgresDB db(config);
+        HttpServer server(&db, 8086);
+        
+        // Setup signal handling for this server
+        SignalManager sigManager;
+        sigManager.setCallback([&server]() { server.stop(); });
+        sigManager.setup();
+        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -223,7 +265,7 @@ TEST(HttpServer, MissingRequiredFields) {
     // Send JSON with missing required fields
     std::string json = getInvalidJson(0);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:18093/ -H 'Content-Type: "
+        "timeout 2 curl -s -X POST http://localhost:8086/ -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -238,7 +280,14 @@ TEST(HttpServer, ConcurrentValidRequests) {
 
     std::thread server_thread([&sync_point]() {
         ConfigManager config(".env");
-        HttpServer server(config, true, 18094);
+        PostgresDB db(config);
+        HttpServer server(&db, 8087);
+        
+        // Setup signal handling for this server
+        SignalManager sigManager;
+        sigManager.setCallback([&server]() { server.stop(); });
+        sigManager.setup();
+        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -253,7 +302,7 @@ TEST(HttpServer, ConcurrentValidRequests) {
         clients.emplace_back([i]() {
             std::string json = getValidJson(i + 10);
             std::string cmd =
-                "timeout 2 curl -s -X POST http://localhost:18094/ -H "
+                "timeout 2 curl -s -X POST http://localhost:8087/ -H "
                 "'Content-Type: application/json' -d '" +
                 json + "' > /dev/null 2>&1";
             system(cmd.c_str());
@@ -277,7 +326,14 @@ TEST(HttpServer, ConcurrentMixedRequests) {
 
     std::thread server_thread([&sync_point]() {
         ConfigManager config(".env");
-        HttpServer server(config, true, 18095);
+        PostgresDB db(config);
+        HttpServer server(&db, 8088);
+        
+        // Setup signal handling for this server
+        SignalManager sigManager;
+        sigManager.setCallback([&server]() { server.stop(); });
+        sigManager.setup();
+        
         sync_point.arrive_and_wait();
         server.start();
     });
@@ -293,7 +349,7 @@ TEST(HttpServer, ConcurrentMixedRequests) {
             std::string json =
                 (i % 2 == 0) ? getValidJson(i + 20) : getInvalidJson(i + 20);
             std::string cmd =
-                "timeout 2 curl -s -X POST http://localhost:18095/ -H "
+                "timeout 2 curl -s -X POST http://localhost:8088/ -H "
                 "'Content-Type: application/json' -d '" +
                 json + "' > /dev/null 2>&1";
             system(cmd.c_str());

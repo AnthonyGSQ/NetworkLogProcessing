@@ -76,9 +76,9 @@ DB_PORT=5432
 )";
 
     createTestEnvFile(".env.test", testEnvContent);
-
+    ConfigManager config(".env.test");
     try {
-        EXPECT_THROW(ConfigManager config(".env.test"), std::runtime_error);
+        EXPECT_THROW(config.validateRequired() , std::runtime_error);
     } catch (...) {
         deleteTestEnvFile(".env.test");
         throw;
