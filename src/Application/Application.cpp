@@ -2,7 +2,8 @@
 
 #include <iostream>
 
-Application::Application(const std::string& configPath) {
+Application::Application(const std::string& configPath, int recvPort)
+    : port(recvPort) {
     configManager = std::make_unique<ConfigManager>(configPath);
     database = std::make_unique<PostgresDB>(*configManager);
     httpServer = std::make_unique<HttpServer>(database.get(), port);

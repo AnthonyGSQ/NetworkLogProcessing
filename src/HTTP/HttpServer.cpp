@@ -51,8 +51,7 @@ bool HttpServer::startAcceptor() {
         std::cout << "Server listening on port " << port << "\n";
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "HttpServer::startAcceptor() failed: " << e.what() << "\n";
-        return false;
+        throw std::runtime_error(std::string("HttpServer::startAcceptor() failed: ") + e.what());   
     }
 }
 
@@ -69,8 +68,7 @@ void HttpServer::acceptConnections() {
             tcp::socket currentSocket{ioc};
             acceptor->accept(currentSocket);
 
-            // we create the clientconnection with his respective socket and
-            // database
+            // we create the clientconnection with his respective socket and database
             clientConnection client(std::move(currentSocket), database);
             // now we put the task clientConnection in the queue to be consumed
             // by a thread
