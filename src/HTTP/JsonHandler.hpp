@@ -41,6 +41,8 @@ class JsonHandler {
     // this function validates that the current json have all the reservation
     // information, if thats not the case, returns false
     bool validateJsonFormat(const Reservation& reservation);
+    // translates a Reservation object to JSON string for HTTP response
+    std::string reservationToJson(const Reservation& res);
 
    private:
 };

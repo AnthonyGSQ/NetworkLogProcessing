@@ -38,10 +38,17 @@ class clientConnection : public Task {
     beast::flat_buffer socketBuffer;
     http::request<http::string_body> httpRequest;
 
-    // Parses request body JSON, validates reservation, builds response
+    // Parses HTTP request and call the corresponding function according to what
+    // the user want to do (GET, POST, PUT, DELETE)
     void processRequest(http::response<http::string_body>& httpResponse);
-    // Sends HTTP error response when exception occurs
-    void sendErrorResponse(const std::exception& e) noexcept;
+    // HTTP POST new reservation
+    void handlePostHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP GET reservation
+    void handleGetHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP PUT (update reservation)
+    void handlePutHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP DELETE reservation
+    void handleDeleteHTTP(http::response<http::string_body>& httpresponse);
 };
 
 #endif

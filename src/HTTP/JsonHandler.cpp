@@ -72,6 +72,47 @@ Reservation JsonHandler::parseJson(const std::string& jsonFile) {
     return currentReservation;
 };
 
+std::string JsonHandler::reservationToJson(const Reservation& res) {
+    try {
+        boost::json::object jsonObj;
+        
+        // Guest data
+        jsonObj["guest_name"] = res.guest_name;
+        jsonObj["guest_email"] = res.guest_email;
+        jsonObj["guest_phone"] = res.guest_phone;
+        
+        // Reservation info
+        jsonObj["room_number"] = res.room_number;
+        jsonObj["room_type"] = res.room_type;
+        jsonObj["number_of_guests"] = res.number_of_guests;
+        
+        // Dates
+        jsonObj["check_in_date"] = res.check_in_date;
+        jsonObj["check_out_date"] = res.check_out_date;
+        jsonObj["number_of_nights"] = res.number_of_nights;
+        
+        // Cost
+        jsonObj["price_per_night"] = res.price_per_night;
+        jsonObj["total_price"] = res.total_price;
+        jsonObj["payment_method"] = res.payment_method;
+        jsonObj["paid"] = res.paid;
+        
+        // Status
+        jsonObj["reservation_status"] = res.reservation_status;
+        jsonObj["special_requests"] = res.special_requests;
+        
+        // Metadata timestamps
+        jsonObj["created_at"] = res.created_at;
+        jsonObj["updated_at"] = res.updated_at;
+        
+        // Convert to string
+        return boost::json::serialize(jsonObj);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("Failed to serialize reservation to JSON: " + 
+                                std::string(e.what()));
+    }
+}
+
 bool JsonHandler::validateJsonFormat(const Reservation& reservation) {
     // Validar datos del huésped
     if (reservation.guest_name.empty()) {

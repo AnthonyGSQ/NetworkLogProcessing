@@ -86,7 +86,7 @@ class PostgresDB {
      * pool Allows multiple threads to insert concurrently without blocking
      */
     int insertReservation(pqxx::connection& conn, const Reservation& res);
-
+    //TODO: pqxx connection in update, get and delete functions
     /**
      * Retrieve a reservation by ID
      *
@@ -95,7 +95,6 @@ class PostgresDB {
      * throws: std::runtime_error if no reservation with that ID exists
      */
     Reservation getReservationById(int id);
-
     /**
      * Update an existing reservation
      *
