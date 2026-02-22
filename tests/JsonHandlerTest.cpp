@@ -241,3 +241,40 @@ TEST(Logger, ValidateJsonFormat_InvalidPaymentMethod) {
     res.payment_method = "";
     EXPECT_FALSE(jsonHandler.validateJsonFormat(res));
 }
+TEST(JsonHandler, ReservationToJson) {
+    JsonHandler jsonHandler;
+    Reservation res;
+    res.guest_name = "Juan Pérez";
+    res.guest_email = "juan@example.com";
+    res.guest_phone = "+34 123 456 789";
+    res.room_number = 101;
+    res.room_type = "Double";
+    res.number_of_guests = 2;
+    res.check_in_date = "2026-02-15";
+    res.check_out_date = "2026-02-20";
+    res.number_of_nights = 5;
+    res.price_per_night = 150.50;
+    res.total_price = 752.50;
+    res.payment_method = "credit_card";
+    res.paid = true;
+    res.reservation_status = "confirmed";
+    res.special_requests = "No smoking";
+    res.created_at = 1707124800;
+    res.updated_at = 1707124800;
+
+    // Convert to JSON
+    std::string jsonStr = jsonHandler.reservationToJson(res);
+    
+    // Parse it back to verify it's valid JSON
+    Reservation parsedRes = jsonHandler.parseJson(jsonStr);
+    
+    // Verify the data is intact
+    EXPECT_EQ(parsedRes.guest_name, "Juan Pérez");
+    EXPECT_EQ(parsedRes.guest_email, "juan@example.com");
+    EXPECT_EQ(parsedRes.room_number, 101);
+    EXPECT_EQ(parsedRes.room_type, "Double");
+    EXPECT_EQ(parsedRes.number_of_guests, 2);
+    EXPECT_EQ(parsedRes.price_per_night, 150.50);
+    EXPECT_EQ(parsedRes.total_price, 752.50);
+    EXPECT_EQ(parsedRes.paid, true);
+}

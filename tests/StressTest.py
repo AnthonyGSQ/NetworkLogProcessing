@@ -67,7 +67,7 @@ def worker(worker_id, work_queue):
     """Worker thread: consume requests from queue and send to the server"""
     global success_count, error_count
     
-    url = "http://localhost:8080"
+    url = "http://localhost:8080/application/reservations"
     headers = {"Content-Type": "application/json"}
     
     while True:
