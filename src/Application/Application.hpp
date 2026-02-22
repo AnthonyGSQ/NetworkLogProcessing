@@ -13,15 +13,17 @@ class Application {
     std::unique_ptr<HttpServer> httpServer;
     std::unique_ptr<PostgresDB> database;
     std::unique_ptr<ConfigManager> configManager;
-    int initializeSignalManager();
-    int initializeHttpServer();
-    int initializeDatabase();
-    int initializeConfigManager();
+    
+    // Initialization methods throw std::runtime_error on failure
+    void initializeSignalManager();
+    void initializeDatabase();
+    void initializeConfigManager();
 
    public:
     Application(const std::string& configPath, int port = 8080);
     ~Application() = default;
-    int run();
+    // run() throws std::runtime_error on any initialization or startup failure
+    void run();
     void stop();
 };
 
