@@ -8,6 +8,11 @@
 
 HttpServer::HttpServer(PostgresDB* db, int port_param)
     : ipv4(true), port(port_param), database(db), acceptor(nullptr) {
+    // Validate port immediately in constructor
+    if (port <= 0) {
+        throw std::invalid_argument("Invalid port number: " + std::to_string(port) + 
+                                   ". Port must be greater than 0");
+    }
     // TODO: Get port from config if available when port_param is 0
     // if (port == 0) port = config.getInt("HTTP_PORT", 8080);
 }
@@ -15,7 +20,9 @@ HttpServer::HttpServer(PostgresDB* db, int port_param)
 HttpServer::~HttpServer() { stopServer(); }
 
 void HttpServer::start() {
-    if (!startAcceptor()) {
+    try {
+        startAcceptor();
+    } catch (...) {
         throw std::runtime_error("Failed to start HTTP acceptor");
     }
     acceptConnections();
@@ -23,33 +30,25 @@ void HttpServer::start() {
 
 void HttpServer::stop() { stopServer(); }
 
-bool HttpServer::startAcceptor() {
+void HttpServer::startAcceptor() {
     try {
-        // Validate port FIRST before any operations
-        if (port <= 0) {
-            std::cerr << "HttpServer::startAcceptor(): Error: invalid port "
-                      << port << "\n";
-            return false;
-        }
-
         // Create acceptor now (deferred from constructor)
         acceptor = std::make_unique<tcp::acceptor>(ioc);
 
         if (ipv4) {
             acceptor->open(tcp::v4());
             // Set reuse_address BEFORE bind to allow rapid port reuse
-            acceptor->set_option(tcp::acceptor::reuse_address(true));
+            //acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v4(), port));
         } else {
             acceptor->open(tcp::v6());
             // Set reuse_address BEFORE bind to allow rapid port reuse
-            acceptor->set_option(tcp::acceptor::reuse_address(true));
+            //acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v6(), port));
         }
         acceptor->listen(asio::socket_base::max_listen_connections);
 
         std::cout << "Server listening on port " << port << "\n";
-        return true;
     } catch (const std::exception& e) {
         throw std::runtime_error(
             std::string("HttpServer::startAcceptor() failed: ") + e.what());

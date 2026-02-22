@@ -4,12 +4,25 @@
 
 Reservation JsonHandler::parseJson(const std::string& jsonFile) {
     Reservation currentReservation;
-    // TODO: si el usuario manda un json valido sin esta info, cae en un catch
-    // no muy informativo
     try {
         // parsing json
         boost::json::object currentJson =
             boost::json::parse(jsonFile).as_object();
+
+        // Check required fields first
+        std::vector<std::string> requiredFields = {
+            "guest_name", "guest_email", "guest_phone",
+            "room_number", "room_type", "number_of_guests",
+            "check_in_date", "check_out_date", "number_of_nights",
+            "price_per_night", "total_price", "payment_method", "paid",
+            "created_at", "updated_at"
+        };
+
+        for (const auto& field : requiredFields) {
+            if (!currentJson.contains(field)) {
+                throw std::invalid_argument("Missing required field: " + field);
+            }
+        }
 
         // Guest data
         currentReservation.guest_name =

@@ -48,8 +48,8 @@ class HttpServer {
     void start();
     // Stops the server gracefully
     void stop();
-    // Opens TCP acceptor on configured port. Returns false on failure.
-    bool startAcceptor();
+    // Opens TCP acceptor on configured port. Throws runtime_error if someting went wrong
+    void startAcceptor();
 
    private:
     bool ipv4;
