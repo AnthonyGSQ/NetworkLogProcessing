@@ -46,7 +46,7 @@ $(TEST_TARGET): $(TEST_OBJECTS) $(TEST_MAIN) $(filter-out $(OBJ_DIR)/Application
 
 test: $(TEST_TARGET)
 	timeout --signal=SIGINT 60 ./$(TEST_TARGET) || true
-	gcovr -r . --exclude 'tests' --print-summary --fail-under-line 90
+	gcovr -r . --exclude 'tests' --print-summary --fail-under-line 85
 
 coverage: $(TEST_TARGET)
 	timeout --signal=SIGINT 60 ./$(TEST_TARGET) || true

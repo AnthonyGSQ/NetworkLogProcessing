@@ -298,7 +298,7 @@ Result: Zero mutex contention, zero data races (with valgrind verification).
 * Context switch: ~1-5μs (CPU-dependent)
 * Memory per idle worker: ~2MB (thread stack)
 
-Total idle cost: 4 threads × 2MB = 8MB. Compare to 10,000 threads = 20GB. ✅
+Total idle cost: 4 threads × 2MB = 8MB. Compare to 10,000 threads = 20GB.
 
 == What's NOT Here (Yet)
 
@@ -307,18 +307,6 @@ Total idle cost: 4 threads × 2MB = 8MB. Compare to 10,000 threads = 20GB. ✅
 [cols="1,2,2"]
 |===
 |Feature|Why Missing|Value If Added
-
-|**HTTP Parsing**
-|Scope creep; focus is architecture
-|Completes the server (currently accepts but doesn't respond)
-
-|**PostgreSQL Integration**
-|Database layer is complex; showcase separate from core server
-|Real persistence, demonstrates database patterns
-
-|**Request Validation**
-|JSON schema validation adds logic layer
-|Production-ready data safety
 
 |**Load Testing**
 |Need external tools + sustained test harness
