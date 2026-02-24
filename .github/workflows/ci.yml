@@ -10,9 +10,36 @@ jobs:
   quality-checks:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: hotel_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Create .env file for database
+        run: |
+          cat > .env << EOF
+          DB_HOST=127.0.0.1
+          DB_PORT=5432
+          DB_NAME=hotel_db
+          DB_USER=testuser
+          DB_PASSWORD=testpass
+          SERVER_PORT=8080
+          SERVER_HOST=127.0.0.1
+          EOF
       
       - name: Install dependencies
         run: |
@@ -37,6 +64,33 @@ jobs:
           make -j$(nproc)
           sudo make install
           sudo ldconfig
+      
+      - name: Initialize database schema
+        run: |
+          sleep 5  # Wait for PostgreSQL to be ready
+          PGPASSWORD=testpass psql -h 127.0.0.1 -U testuser -d hotel_db << 'EOF'
+          CREATE TABLE IF NOT EXISTS reservations (
+              id SERIAL PRIMARY KEY,
+              guest_name VARCHAR(255) NOT NULL,
+              guest_email VARCHAR(255),
+              guest_phone VARCHAR(20),
+              room_number INTEGER NOT NULL,
+              room_type VARCHAR(100),
+              number_of_guests INTEGER,
+              check_in_date DATE NOT NULL,
+              check_out_date DATE NOT NULL,
+              number_of_nights INTEGER,
+              price_per_night NUMERIC(10, 2),
+              total_price NUMERIC(10, 2),
+              payment_method VARCHAR(50),
+              paid BOOLEAN,
+              reservation_status VARCHAR(50),
+              special_requests TEXT,
+              created_at BIGINT,
+              updated_at BIGINT,
+              CONSTRAINT "no_overlapping_reservations" EXCLUDE USING gist (room_number WITH =, daterange(check_in_date, check_out_date, '[)') WITH &&)
+          );
+          EOF
       
       - name: Build project
         run: make all
