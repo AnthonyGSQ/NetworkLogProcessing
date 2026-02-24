@@ -69,6 +69,7 @@ jobs:
         run: |
           sleep 5  # Wait for PostgreSQL to be ready
           PGPASSWORD=testpass psql -h 127.0.0.1 -U testuser -d hotel_db << 'EOF'
+          CREATE EXTENSION IF NOT EXISTS btree_gist;
           CREATE TABLE IF NOT EXISTS reservations (
               id SERIAL PRIMARY KEY,
               guest_name VARCHAR(255) NOT NULL,
