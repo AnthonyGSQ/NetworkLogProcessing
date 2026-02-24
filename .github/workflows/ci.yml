@@ -25,8 +25,22 @@ jobs:
             gcovr \
             clang-format \
             libboost-all-dev \
-            libpqxx-dev \
-            postgresql-client
+            postgresql-client \
+            libpq-dev \
+            doxygen
+      
+      - name: Build and install libpqxx from source
+        run: |
+          cd /tmp
+          wget https://github.com/jtv/libpqxx/archive/refs/tags/7.8.1.tar.gz
+          tar -xzf 7.8.1.tar.gz
+          cd libpqxx-7.8.1
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
       
       - name: Build project
         run: make all
