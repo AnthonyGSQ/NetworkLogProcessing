@@ -56,24 +56,23 @@ static std::string getValidJson(int variant = 0) {
     int roomNumber = 100 + variant;
 
     std::ostringstream oss;
-    oss << "{"
-        << "\"guest_name\":\"" << guestName << "\","
-        << "\"guest_email\":\"" << guestEmail << "\","
-        << "\"guest_phone\":\"" << guestPhone << "\","
-        << "\"room_number\":" << roomNumber << ","
-        << "\"room_type\":\"Doble\","
-        << "\"number_of_guests\":2,"
-        << "\"check_in_date\":\"2026-02-15\","
-        << "\"check_out_date\":\"2026-02-18\","
-        << "\"number_of_nights\":3,"
-        << "\"price_per_night\":150.0,"
-        << "\"total_price\":450.0,"
-        << "\"payment_method\":\"credit_card\","
-        << "\"paid\":true,"
-        << "\"reservation_status\":\"confirmed\","
-        << "\"special_requests\":\"Test reservation\","
-        << "\"created_at\":" << timestamp << ","
-        << "\"updated_at\":" << timestamp << "}";
+    oss << "{\"guest_name\":\"" << guestName << "\",";
+    oss << "\"guest_email\":\"" << guestEmail << "\",";
+    oss << "\"guest_phone\":\"" << guestPhone << "\",";
+    oss << "\"room_number\":" << roomNumber << ",";
+    oss << "\"room_type\":\"Doble\",";
+    oss << "\"number_of_guests\":2,";
+    oss << "\"check_in_date\":\"2026-02-15\",";
+    oss << "\"check_out_date\":\"2026-02-18\",";
+    oss << "\"number_of_nights\":3,";
+    oss << "\"price_per_night\":150.0,";
+    oss << "\"total_price\":450.0,";
+    oss << "\"payment_method\":\"credit_card\",";
+    oss << "\"paid\":true,";
+    oss << "\"reservation_status\":\"confirmed\",";
+    oss << "\"special_requests\":\"Test reservation\",";
+    oss << "\"created_at\":" << timestamp << ",";
+    oss << "\"updated_at\":" << timestamp << "}";
     return oss.str();
 }
 
