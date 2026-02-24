@@ -264,10 +264,10 @@ TEST(JsonHandler, ReservationToJson) {
 
     // Convert to JSON
     std::string jsonStr = jsonHandler.reservationToJson(res);
-    
+
     // Parse it back to verify it's valid JSON
     Reservation parsedRes = jsonHandler.parseJson(jsonStr);
-    
+
     // Verify the data is intact
     EXPECT_EQ(parsedRes.guest_name, "Juan Pérez");
     EXPECT_EQ(parsedRes.guest_email, "juan@example.com");

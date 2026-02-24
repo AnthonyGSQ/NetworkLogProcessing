@@ -13,7 +13,7 @@ class Application {
     std::unique_ptr<HttpServer> httpServer;
     std::unique_ptr<PostgresDB> database;
     std::unique_ptr<ConfigManager> configManager;
-    
+
     // Initialization methods throw std::runtime_error on failure
     void initializeSignalManager();
     void initializeDatabase();

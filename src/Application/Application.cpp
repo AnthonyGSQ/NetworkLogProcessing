@@ -20,12 +20,13 @@ void Application::run() {
         initializeConfigManager();
         initializeDatabase();
         initializeSignalManager();
-        
-        std::cout << "All services initialized successfully. Starting HTTP server...\n";
+
+        std::cout << "All services initialized successfully. Starting HTTP "
+                     "server...\n";
         httpServer->start();
     } catch (const std::exception& e) {
-        throw std::runtime_error(
-            std::string("Application::run() failed: ") + e.what());
+        throw std::runtime_error(std::string("Application::run() failed: ") +
+                                 e.what());
     }
 }
 

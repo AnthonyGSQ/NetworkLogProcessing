@@ -10,8 +10,9 @@ HttpServer::HttpServer(PostgresDB* db, int port_param)
     : ipv4(true), port(port_param), database(db), acceptor(nullptr) {
     // Validate port immediately in constructor
     if (port <= 0) {
-        throw std::invalid_argument("Invalid port number: " + std::to_string(port) + 
-                                   ". Port must be greater than 0");
+        throw std::invalid_argument(
+            "Invalid port number: " + std::to_string(port) +
+            ". Port must be greater than 0");
     }
     // TODO: Get port from config if available when port_param is 0
     // if (port == 0) port = config.getInt("HTTP_PORT", 8080);
@@ -38,12 +39,12 @@ void HttpServer::startAcceptor() {
         if (ipv4) {
             acceptor->open(tcp::v4());
             // Set reuse_address BEFORE bind to allow rapid port reuse
-            //acceptor->set_option(tcp::acceptor::reuse_address(true));
+            // acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v4(), port));
         } else {
             acceptor->open(tcp::v6());
             // Set reuse_address BEFORE bind to allow rapid port reuse
-            //acceptor->set_option(tcp::acceptor::reuse_address(true));
+            // acceptor->set_option(tcp::acceptor::reuse_address(true));
             acceptor->bind(tcp::endpoint(tcp::v6(), port));
         }
         acceptor->listen(asio::socket_base::max_listen_connections);

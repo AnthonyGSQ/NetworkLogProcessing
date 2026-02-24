@@ -24,7 +24,9 @@ jobs:
             valgrind \
             gcovr \
             clang-format \
-            libboost-all-dev
+            libboost-all-dev \
+            libpqxx-dev \
+            postgresql-client
       
       - name: Build project
         run: make all

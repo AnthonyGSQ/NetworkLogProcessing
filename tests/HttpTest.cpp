@@ -104,7 +104,8 @@ TEST(HttpServer, ConstructorIpv4) {
     // Send valid reservation to test basic connectivity
     std::string json = getValidJson(0);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:8080/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8080/application/reservation -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -156,7 +157,7 @@ TEST(HttpServer, PortInUse) {
     std::barrier sync_point(2);
     ConfigManager config(".env");
     PostgresDB db(config);
-    
+
     // Create and start first server on port 9999
     HttpServer server(&db, 9999);
     std::thread server_thread([&sync_point, &server]() {
@@ -168,22 +169,21 @@ TEST(HttpServer, PortInUse) {
         }
     });
     server_thread.detach();
-    
+
     // Setup signal handling
     SignalManager sigManager;
     sigManager.setCallback([&server]() { server.stop(); });
     sigManager.setup();
-    
+
     sync_point.arrive_and_wait();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    
+
     // Create second server on same port
     HttpServer server2(&db, 9999);
-    
+
     // Attempting to start second server should throw because port is in use
     EXPECT_THROW(server2.start(), std::runtime_error);
-    
+
     server.stop();
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }
-

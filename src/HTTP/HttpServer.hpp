@@ -48,7 +48,8 @@ class HttpServer {
     void start();
     // Stops the server gracefully
     void stop();
-    // Opens TCP acceptor on configured port. Throws runtime_error if someting went wrong
+    // Opens TCP acceptor on configured port. Throws runtime_error if someting
+    // went wrong
     void startAcceptor();
 
    private:

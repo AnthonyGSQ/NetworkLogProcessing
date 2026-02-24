@@ -39,12 +39,14 @@ static void cleanupClientTestData(const std::string& guestNamePattern) {
         txn.exec(deleteQuery);
         txn.commit();
     } catch (const std::exception& e) {
-        std::cerr << "[ClientConnectionTest] Cleanup failed: " << e.what() << "\n";
+        std::cerr << "[ClientConnectionTest] Cleanup failed: " << e.what()
+                  << "\n";
     }
 }
 
 // Helper to create valid JSON for tests
-static std::string createValidJson(const std::string& guestName, int variant = 0) {
+static std::string createValidJson(const std::string& guestName,
+                                   int variant = 0) {
     long timestamp = 1707427200 + (variant * 86400);
     std::string guestEmail = guestName + "@example.com";
     std::string guestPhone = "+34612345670";
@@ -95,7 +97,8 @@ TEST(ClientConnection, InvalidJsonRequest) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -109,7 +112,8 @@ TEST(ClientConnection, InvalidJsonRequest) {
 
     // Send invalid JSON - malformed
     system(
-        "timeout 2 curl -s -X POST http://localhost:8082/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8082/application/reservation -H 'Content-Type: "
         "application/json' -d '{invalid json}' > /dev/null 2>&1");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -129,7 +133,8 @@ TEST(ClientConnection, MissingRequiredFields) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -144,7 +149,8 @@ TEST(ClientConnection, MissingRequiredFields) {
     // Send JSON with missing required fields
     std::string json = createInvalidJson(0);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:8083/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8083/application/reservation -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -166,7 +172,8 @@ TEST(ClientConnection, ConcurrentValidRequests) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -182,9 +189,11 @@ TEST(ClientConnection, ConcurrentValidRequests) {
     std::vector<std::thread> clients;
     for (int i = 0; i < 5; i++) {
         clients.emplace_back([i]() {
-            std::string json = createValidJson("ConcurrentValidGuest" + std::to_string(i), i + 10);
+            std::string json = createValidJson(
+                "ConcurrentValidGuest" + std::to_string(i), i + 10);
             std::string cmd =
-                "timeout 2 curl -s -X POST http://localhost:8084/application/reservation -H "
+                "timeout 2 curl -s -X POST "
+                "http://localhost:8084/application/reservation -H "
                 "'Content-Type: application/json' -d '" +
                 json + "' > /dev/null 2>&1";
             system(cmd.c_str());
@@ -214,7 +223,8 @@ TEST(ClientConnection, ConcurrentMixedRequests) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -231,14 +241,17 @@ TEST(ClientConnection, ConcurrentMixedRequests) {
     for (int i = 0; i < 5; i++) {
         clients.emplace_back([i]() {
             try {
-                std::string json = createValidJson("MixedGuest" + std::to_string(i));
+                std::string json =
+                    createValidJson("MixedGuest" + std::to_string(i));
                 std::string cmd =
-                    "timeout 2 curl -s -X POST http://localhost:8085/application/reservation -H "
+                    "timeout 2 curl -s -X POST "
+                    "http://localhost:8085/application/reservation -H "
                     "'Content-Type: application/json' -d '" +
                     json + "' > /dev/null 2>&1";
                 system(cmd.c_str());
             } catch (const std::exception& e) {
-                std::cerr << "[ClientConnectionTest] Client error: " << e.what() << "\n";
+                std::cerr << "[ClientConnectionTest] Client error: " << e.what()
+                          << "\n";
             }
         });
     }
@@ -260,17 +273,18 @@ TEST(ClientConnection, MalformedJson) {
     ConfigManager config(".env");
     PostgresDB db(config);
     HttpServer server(&db, 8089);
-    
+
     std::thread server_thread([&sync_point, &server]() {
         sync_point.arrive_and_wait();
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
-    
+
     SignalManager sigManager;
     sigManager.setCallback([&server]() { server.stop(); });
     sigManager.setup();
@@ -281,7 +295,8 @@ TEST(ClientConnection, MalformedJson) {
     // Send malformed JSON - unterminated string
     std::string malformedJson = "{\"guest_name\": \"TESTING_OWNER";
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:8089/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8089/application/reservation -H 'Content-Type: "
         "application/json' -d '" +
         malformedJson + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -297,17 +312,18 @@ TEST(ClientConnection, InvalidJsonMissingFields) {
     ConfigManager config(".env");
     PostgresDB db(config);
     HttpServer server(&db, 8090);
-    
+
     std::thread server_thread([&sync_point, &server]() {
         sync_point.arrive_and_wait();
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
-    
+
     SignalManager sigManager;
     sigManager.setCallback([&server]() { server.stop(); });
     sigManager.setup();
@@ -318,7 +334,8 @@ TEST(ClientConnection, InvalidJsonMissingFields) {
     // Send JSON missing required fields
     std::string json = createInvalidJson(0);
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:8090/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8090/application/reservation -H 'Content-Type: "
         "application/json' -d '" +
         json + "' > /dev/null 2>&1";
     system(cmd.c_str());
@@ -334,17 +351,18 @@ TEST(ClientConnection, EmptyRequestBody) {
     ConfigManager config(".env");
     PostgresDB db(config);
     HttpServer server(&db, 8091);
-    
+
     std::thread server_thread([&sync_point, &server]() {
         sync_point.arrive_and_wait();
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
-    
+
     SignalManager sigManager;
     sigManager.setCallback([&server]() { server.stop(); });
     sigManager.setup();
@@ -354,7 +372,8 @@ TEST(ClientConnection, EmptyRequestBody) {
 
     // Send empty body
     std::string cmd =
-        "timeout 2 curl -s -X POST http://localhost:8091/application/reservation -H 'Content-Type: "
+        "timeout 2 curl -s -X POST "
+        "http://localhost:8091/application/reservation -H 'Content-Type: "
         "application/json' > /dev/null 2>&1";
     system(cmd.c_str());
 
@@ -375,7 +394,8 @@ TEST(ClientConnection, SocketClosedMidConnection) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -429,7 +449,8 @@ TEST(ClientConnection, SocketClosedImmediately) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -477,7 +498,8 @@ TEST(ClientConnection, SocketClosedDuringWrite) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -540,7 +562,8 @@ TEST(ClientConnection, PostReservation) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -556,9 +579,10 @@ TEST(ClientConnection, PostReservation) {
     std::string json = createValidJson("PostTestGuest", 0);
     std::string cmd =
         "curl -s -X POST http://localhost:8800/application/reservation "
-        "-H 'Content-Type: application/json' -d '" + json + "'";
+        "-H 'Content-Type: application/json' -d '" +
+        json + "'";
     system(cmd.c_str());
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     server.stop();
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
@@ -578,7 +602,8 @@ TEST(ClientConnection, GetReservation) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -594,7 +619,8 @@ TEST(ClientConnection, GetReservation) {
     std::string json = createValidJson("GetTestGuest", 0);
     std::string postCmd =
         "curl -s -X POST http://localhost:8801/application/reservation "
-        "-H 'Content-Type: application/json' -d '" + json + "' > /dev/null 2>&1";
+        "-H 'Content-Type: application/json' -d '" +
+        json + "' > /dev/null 2>&1";
     system(postCmd.c_str());
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -623,7 +649,8 @@ TEST(ClientConnection, PutReservation) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -639,7 +666,8 @@ TEST(ClientConnection, PutReservation) {
     std::string json = createValidJson("PutTestGuest", 0);
     std::string postCmd =
         "curl -s -X POST http://localhost:8802/application/reservation "
-        "-H 'Content-Type: application/json' -d '" + json + "' > /dev/null 2>&1";
+        "-H 'Content-Type: application/json' -d '" +
+        json + "' > /dev/null 2>&1";
     system(postCmd.c_str());
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -647,7 +675,8 @@ TEST(ClientConnection, PutReservation) {
     std::string updatedJson = createValidJson("PutTestGuestUpdated", 0);
     std::string putCmd =
         "curl -s -X PUT http://localhost:8802/application/reservation/1 "
-        "-H 'Content-Type: application/json' -d '" + updatedJson + "'";
+        "-H 'Content-Type: application/json' -d '" +
+        updatedJson + "'";
     system(putCmd.c_str());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -670,7 +699,8 @@ TEST(ClientConnection, DeleteReservation) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -686,7 +716,8 @@ TEST(ClientConnection, DeleteReservation) {
     std::string json = createValidJson("DeleteTestGuest", 0);
     std::string postCmd =
         "curl -s -X POST http://localhost:8803/application/reservation "
-        "-H 'Content-Type: application/json' -d '" + json + "' > /dev/null 2>&1";
+        "-H 'Content-Type: application/json' -d '" +
+        json + "' > /dev/null 2>&1";
     system(postCmd.c_str());
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -715,7 +746,8 @@ TEST(ClientConnection, InvalidEndpoint) {
         try {
             server.start();
         } catch (const std::exception& e) {
-            std::cerr << "[ClientConnectionTest] Server error: " << e.what() << "\n";
+            std::cerr << "[ClientConnectionTest] Server error: " << e.what()
+                      << "\n";
         }
     });
     server_thread.detach();
@@ -731,7 +763,8 @@ TEST(ClientConnection, InvalidEndpoint) {
     std::string json = createValidJson("InvalidEndpointGuest", 0);
     std::string cmd =
         "curl -s -X PATCH http://localhost:8806/invalid/endpoint "
-        "-H 'Content-Type: application/json' -d '" + json + "'";
+        "-H 'Content-Type: application/json' -d '" +
+        json + "'";
     system(cmd.c_str());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
