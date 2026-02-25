@@ -8,9 +8,10 @@
 // Network, sockets, I/O
 #include <boost/asio.hpp>
 
-#include "Logger.hpp"
+#include "../DataBase/PostgresDB.hpp"
+#include "JsonHandler.hpp"
 // Task interface
-#include "TaskInterface.hpp"
+#include "../Utils/TaskInterface.hpp"
 
 // alias
 namespace beast = boost::beast;
@@ -23,22 +24,31 @@ using tcp = asio::ip::tcp;
 // and sends appropriate HTTP response.
 class clientConnection : public Task {
    public:
-    explicit clientConnection(tcp::socket socket);
+    explicit clientConnection(tcp::socket socket,
+                              PostgresDB* database = nullptr);
 
     // Implements Task interface. Called by worker thread.
     // Reads HTTP request, parses and validates JSON, sends response.
     void execute() override;
 
    private:
-    Logger log;
+    JsonHandler jsonHandler;
+    PostgresDB* db;
     tcp::socket clientSocket;
     beast::flat_buffer socketBuffer;
     http::request<http::string_body> httpRequest;
 
-    // Parses request body JSON, validates reservation, builds response
+    // Parses HTTP request and call the corresponding function according to what
+    // the user want to do (GET, POST, PUT, DELETE)
     void processRequest(http::response<http::string_body>& httpResponse);
-    // Sends HTTP error response when exception occurs
-    void sendErrorResponse(const std::exception& e) noexcept;
+    // HTTP POST new reservation
+    void handlePostHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP GET reservation
+    void handleGetHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP PUT (update reservation)
+    void handlePutHTTP(http::response<http::string_body>& httpresponse);
+    // HTTP DELETE reservation
+    void handleDeleteHTTP(http::response<http::string_body>& httpresponse);
 };
 
 #endif

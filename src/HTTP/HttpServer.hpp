@@ -16,9 +16,12 @@
 // Network, sockets, I/O
 #include <boost/asio.hpp>
 // for concurrency
+#include <memory>
 #include <thread>
 
-#include "ThreadPool.hpp"
+#include "../DataBase/PostgresDB.hpp"
+#include "../Utils/ThreadPool.hpp"
+#include "../config/ConfigManager.hpp"
 
 // shutdown (thread-safe) librarys
 #include <atomic>
@@ -36,33 +39,33 @@ using tcp = asio::ip::tcp;
 // SIGTERM, SIGTSTP) or through destructor cleanup.
 class HttpServer {
    public:
-    // Constructor: initializes server for specified IP version and port
-    HttpServer(bool ipv4, int port);
+    // Constructor: initializes server with database connection
+    // port: 0 = use default (8080), or specify custom port for testing
+    HttpServer(PostgresDB* db, int port = 8080);
     // Destructor: triggers graceful shutdown sequence
     ~HttpServer();
-    // Blocks while accepting and processing connections.
-    // Returns when shutdown signal is received.
+    // Starts the server: opens acceptor and accepts connections (blocking)
     void start();
-    // Opens TCP acceptor on configured port. Returns false on failure.
-    bool startAcceptor();
+    // Stops the server gracefully
+    void stop();
+    // Opens TCP acceptor on configured port. Throws runtime_error if someting
+    // went wrong
+    void startAcceptor();
 
    private:
     bool ipv4;
     int port;
+    PostgresDB* database;
     // ASIO context managing all I/O operations
     asio::io_context ioc;
     // TCP acceptor listening for incoming connections
-    tcp::acceptor acceptor{ioc};
+    std::unique_ptr<tcp::acceptor> acceptor;
     // Thread-safe flag: set to true by signal handler or stop sequence
     std::atomic<bool> shouldStop{false};
     std::mutex serverMutex;
     std::condition_variable cond_var;
     // Worker thread pool (4 threads) for processing client requests
     ThreadPool threadPool{4};
-
-    // Singleton instance for static signal handler callback
-    static HttpServer* instance;
-    static std::mutex instance_mtx;
 
     // Accepts incoming connections and enqueues them for processing.
     // Runs in calling thread of start(). Detects shutdown via shouldStop flag.
@@ -72,10 +75,6 @@ class HttpServer {
     void stopServer();
     // Thread-safe check of server running state
     bool isRunning() const;
-    // Registers signal handlers (SIGINT, SIGTERM, SIGTSTP) and sets singleton
-    void setupSignalHandlers();
-    // Static callback for signal handling. Calls stopServer() on instance.
-    static void handleSignal(int signal);
 };
 
 #endif
